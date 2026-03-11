@@ -8,31 +8,44 @@ const {
 } = require('../controllers');
 
 async function routes(fastify, options) {
-    // Auth
+    // Public Routes - Auth
     fastify.post('/api/auth/login', authController.login);
     fastify.post('/api/auth/register', authController.register);
 
-    // Menu
-    fastify.get('/api/categories', menuController.getCategories);
-    fastify.get('/api/menu', menuController.getMenu);
-    fastify.get('/api/menu/:id', menuController.getMenuItem);
+    // Protected Routes
+    fastify.register(async function (protectedFastify, opts) {
+        
+        // Add authentication hook for all routes in this context
+        protectedFastify.addHook('onRequest', async (request, reply) => {
+            try {
+                await request.jwtVerify()
+            } catch (err) {
+                reply.send(err)
+            }
+        });
 
-    // Orders
-    fastify.post('/api/orders', orderController.placeOrder);
-    fastify.get('/api/orders', orderController.getOrders);
+        // Menu
+        protectedFastify.get('/api/categories', menuController.getCategories);
+        protectedFastify.get('/api/menu', menuController.getMenu);
+        protectedFastify.get('/api/menu/:id', menuController.getMenuItem);
 
-    // Delivery Zones
-    fastify.get('/api/delivery-zones', miscController.getDeliveryZones);
+        // Orders
+        protectedFastify.post('/api/orders', orderController.placeOrder);
+        protectedFastify.get('/api/orders', orderController.getOrders);
 
-    // Stories
-    fastify.get('/api/stories', miscController.getStories);
+        // Delivery Zones
+        protectedFastify.get('/api/delivery-zones', miscController.getDeliveryZones);
 
-    // Profile
-    fastify.get('/api/profile', profileController.getProfile);
-    fastify.put('/api/profile', profileController.updateProfile);
+        // Stories
+        protectedFastify.get('/api/stories', miscController.getStories);
 
-    // Coupons
-    fastify.post('/api/coupons/validate', couponController.validateCoupon);
+        // Profile
+        protectedFastify.get('/api/profile', profileController.getProfile);
+        protectedFastify.put('/api/profile', profileController.updateProfile);
+
+        // Coupons
+        protectedFastify.post('/api/coupons/validate', couponController.validateCoupon);
+    });
 }
 
 module.exports = routes;

@@ -5,6 +5,5 @@ services:
     build: .
     ports:
       - "3000:3000"
-    environment:
-      - MONGODB_URI=mongodb+srv://ahmedselim806as_db_user:80CxhvIPzFkMycOM@cluster0.nlpykvu.mongodb.net/pizzaAzez?retryWrites=true&w=majority
-      - JWT_SECRET=super-secret-key
+    env_file:
+      - .env
