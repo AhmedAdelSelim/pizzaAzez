@@ -89,6 +89,8 @@ const couponController = {
     }
 };
 
+const adminController = require('./adminController');
+
 module.exports = {
     authController,
     menuController,
@@ -96,4 +98,5 @@ module.exports = {
     profileController,
     miscController,
     couponController,
+    adminController,
 };

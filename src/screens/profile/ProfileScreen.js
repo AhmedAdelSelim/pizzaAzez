@@ -64,6 +64,19 @@ export default function ProfileScreen({ navigation }) {
 
                 {/* Menu Items */}
                 <View style={styles.menuCard}>
+                    {user?.role === 'admin' && (
+                        <TouchableOpacity
+                            style={[styles.menuItem, styles.menuItemBorder]}
+                            activeOpacity={0.6}
+                            onPress={() => navigation.navigate('AdminDashboard')}
+                        >
+                            <View style={styles.menuIconContainer}>
+                                <Ionicons name="shield-checkmark" size={20} color={COLORS.primary} />
+                            </View>
+                            <Text style={styles.menuLabel}>لوحة الإدارة (Admin Dashboard)</Text>
+                            <Ionicons name="chevron-back" size={18} color={COLORS.textMuted} />
+                        </TouchableOpacity>
+                    )}
                     {MENU_ITEMS_LIST.map((item, index) => (
                         <TouchableOpacity
                             key={index}

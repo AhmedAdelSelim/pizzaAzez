@@ -28,6 +28,12 @@ import OrdersScreen from '../screens/profile/OrdersScreen';
 
 import EditProfileScreen from '../screens/profile/EditProfileScreen';
 
+// Admin Screens
+import AdminDashboardScreen from '../screens/admin/AdminDashboardScreen';
+import AdminOrdersScreen from '../screens/admin/AdminOrdersScreen';
+import AdminMenuScreen from '../screens/admin/AdminMenuScreen';
+import AdminMenuFormScreen from '../screens/admin/AdminMenuFormScreen';
+
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
@@ -105,8 +111,13 @@ function MainStack() {
             <Stack.Screen name="Suggestions" component={SuggestionsScreen} />
             <Stack.Screen name="About" component={AboutScreen} />
             <Stack.Screen name="Orders" component={OrdersScreen} />
-
             <Stack.Screen name="EditProfile" component={EditProfileScreen} />
+
+            {/* Admin Screens */}
+            <Stack.Screen name="AdminDashboard" component={AdminDashboardScreen} />
+            <Stack.Screen name="AdminOrders" component={AdminOrdersScreen} />
+            <Stack.Screen name="AdminMenu" component={AdminMenuScreen} />
+            <Stack.Screen name="AdminMenuForm" component={AdminMenuFormScreen} />
         </Stack.Navigator>
     );
 }

@@ -110,6 +110,8 @@ class CouponService {
     }
 }
 
+const AdminService = require('./adminService');
+
 module.exports = {
     authService: new AuthService(),
     menuService: new MenuService(),
@@ -117,4 +119,5 @@ module.exports = {
     profileService: new ProfileService(),
     miscService: new MiscService(),
     couponService: new CouponService(),
+    adminService: new AdminService(),
 };

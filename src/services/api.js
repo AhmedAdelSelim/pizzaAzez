@@ -1,5 +1,5 @@
 // Updated API service to talk to the Fastify backend
-const BASE_URL = 'http://192.168.1.29:3000/api'; // Using local IP for Expo compatibility
+const BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://192.168.1.29:3000/api';
 
 const api = {
     async login(phone, password) {
@@ -127,6 +127,71 @@ const api = {
         });
         const data = await response.json();
         if (!response.ok) throw new Error(data.message || 'كود الخصم غير صحيح');
+        return data;
+    },
+
+    // Admin endpoints
+    async getAdminOrders(token) {
+        const headers = { 'Authorization': `Bearer ${token}` };
+        const response = await fetch(`${BASE_URL}/admin/orders`, { headers });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || 'فشل تحميل طلبات الإدارة');
+        return data;
+    },
+
+    async updateOrderStatus(orderId, status, token) {
+        const headers = { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}` 
+        };
+        const response = await fetch(`${BASE_URL}/admin/orders/${orderId}/status`, {
+            method: 'PUT',
+            headers,
+            body: JSON.stringify({ status }),
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || 'فشل تحديث حالة الطلب');
+        return data;
+    },
+
+    async addMenuItem(itemData, token) {
+        const headers = { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}` 
+        };
+        const response = await fetch(`${BASE_URL}/admin/menu`, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify(itemData),
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || 'فشل إضافة العنصر');
+        return data;
+    },
+
+    async updateMenuItemAdmin(itemId, itemData, token) {
+        const headers = { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}` 
+        };
+        const response = await fetch(`${BASE_URL}/admin/menu/${itemId}`, {
+            method: 'PUT',
+            headers,
+            body: JSON.stringify(itemData),
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || 'فشل تحديث العنصر');
+        return data;
+    },
+
+    async deleteMenuItemAdmin(itemId, token) {
+        const headers = { 'Authorization': `Bearer ${token}` };
+        const response = await fetch(`${BASE_URL}/admin/menu/${itemId}`, {
+            method: 'DELETE',
+            headers,
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || 'فشل حذف العنصر');
         return data;
     }
 };
