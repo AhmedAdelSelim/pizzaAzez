@@ -75,7 +75,31 @@ class OrderService {
             discount: orderData.discount,
             coupon_code: orderData.couponCode,
         };
-        return await orderRepository.create(dbData);
+        const result = await orderRepository.create(dbData);
+
+        // Notify Admins
+        this.notifyAdmins(result).catch(err => console.error('Notification error:', err));
+
+        return result;
+    }
+
+    async notifyAdmins(order) {
+        try {
+            const admins = await userRepository.find({ role: 'admin' });
+            const tokens = admins.map(admin => admin.push_token).filter(token => !!token);
+            
+            if (tokens.length > 0) {
+                const pushService = require('./pushService');
+                await pushService.sendNotification(
+                    tokens,
+                    'طلب جديد! 🍕',
+                    `يوجد طلب جديد رقم #${order.id.substring(0, 8)} بمبلغ ${order.total} ج.م`,
+                    { orderId: order.id }
+                );
+            }
+        } catch (error) {
+            console.error('Error in notifyAdmins:', error);
+        }
     }
 
     async getOrders() {
@@ -134,4 +158,5 @@ module.exports = {
     miscService: new MiscService(),
     couponService: new CouponService(),
     adminService: new AdminService(),
+    pushService: require('./pushService'),
 };

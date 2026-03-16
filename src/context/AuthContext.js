@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useReducer, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import api from '../services/api';
+import { registerForPushNotificationsAsync } from '../utils/notifications';
 
 const AuthContext = createContext();
 
@@ -56,11 +57,27 @@ export function AuthProvider({ children }) {
             if (stored) {
                 const { user, token } = JSON.parse(stored);
                 dispatch({ type: 'RESTORE_TOKEN', payload: { user, token } });
+                
+                // If admin, register for push notifications
+                if (user.role === 'admin') {
+                    handlePushRegistration(user, token);
+                }
             } else {
                 dispatch({ type: 'LOGOUT' });
             }
         } catch {
             dispatch({ type: 'LOGOUT' });
+        }
+    };
+
+    const handlePushRegistration = async (user, token) => {
+        try {
+            const pushToken = await registerForPushNotificationsAsync();
+            if (pushToken && pushToken !== user.push_token) {
+                await updateProfile({ push_token: pushToken });
+            }
+        } catch (error) {
+            console.log('Error registering for push notifications:', error);
         }
     };
 
@@ -70,6 +87,12 @@ export function AuthProvider({ children }) {
             const result = await api.login(phone, password);
             await AsyncStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(result));
             dispatch({ type: 'LOGIN_SUCCESS', payload: result });
+            
+            // If admin, register for push notifications
+            if (result.user.role === 'admin') {
+                handlePushRegistration(result.user, result.token);
+            }
+            
             return result;
         } catch (error) {
             dispatch({ type: 'SET_ERROR', payload: error.message });
