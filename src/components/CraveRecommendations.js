@@ -13,30 +13,34 @@ export default function CraveRecommendations({ onPress }) {
         if (hour >= 5 && hour < 12) {
             return {
                 title: 'صباح الخير! ☀️',
-                subtitle: 'ابدأ يومك بعروض الغداء المبكرة',
+                subtitle: 'ابدأ يومك فطائر مشلتت ساخنة وعروض مميزة',
                 image: require('../../assets/images/lunch_deals.png'),
-                color: '#FF9800'
+                color: '#FF9800',
+                suggestion: 'فطير مشلتت بالسمن البلدي'
             };
-        } else if (hour >= 12 && hour < 18) {
+        } else if (hour >= 12 && hour < 17) {
             return {
-                title: 'وقت الغداء! 🍕',
-                subtitle: 'وفر أكتر مع عروض الوجبات الفردية',
+                title: 'ساعة الغداء! 🍕',
+                subtitle: 'وفر أكتر مع عروض الوجبات الفردية والكومبو',
                 image: require('../../assets/images/lunch_deals.png'),
-                color: '#E85D2C'
+                color: '#E85D2C',
+                suggestion: 'عرض الكومبو الفردي'
             };
-        } else if (hour >= 18 && hour < 24) {
+        } else if (hour >= 17 && hour < 23) {
             return {
                 title: 'جمعة العيلة! 👨‍👩‍👧‍👦',
-                subtitle: 'بيتزا الحجم العائلي هي اللي تجمعكم',
+                subtitle: 'بيتزا الحجم العائلي هي اللي تجمعكم الليلة',
                 image: require('../../assets/images/family_feast.png'),
-                color: '#4CAF50'
+                color: '#4CAF50',
+                suggestion: 'بيتزا سوبر سوبريم عائلي'
             };
         } else {
             return {
                 title: 'جوع نص الليل؟ 🌙',
-                subtitle: 'اطلب دلوقتي وعلينا التوصيل',
+                subtitle: 'اطلب دلوقتي وعلينا التوصيل السريع لأي مكان',
                 image: require('../../assets/images/late_night.png'),
-                color: '#673AB7'
+                color: '#673AB7',
+                suggestion: 'بيتزا رانش بالكريمة'
             };
         }
     }, []);
@@ -59,6 +63,11 @@ export default function CraveRecommendations({ onPress }) {
                 <View style={styles.textContainer}>
                     <Text style={styles.title}>{recommendation.title}</Text>
                     <Text style={styles.subtitle}>{recommendation.subtitle}</Text>
+                    {recommendation.suggestion && (
+                        <View style={styles.suggestionBadge}>
+                            <Text style={styles.suggestionText}>جرب: {recommendation.suggestion}</Text>
+                        </View>
+                    )}
                 </View>
             </View>
         </TouchableOpacity>
@@ -114,5 +123,19 @@ const styles = StyleSheet.create({
         ...FONTS.medium,
         marginTop: 4,
         textAlign: 'right',
+    },
+    suggestionBadge: {
+        marginTop: 8,
+        backgroundColor: 'rgba(255, 255, 255, 0.2)',
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+        borderRadius: SIZES.radius_sm,
+        borderWidth: 1,
+        borderColor: 'rgba(255, 255, 255, 0.3)',
+    },
+    suggestionText: {
+        color: COLORS.white,
+        fontSize: SIZES.xs,
+        ...FONTS.bold,
     }
 });

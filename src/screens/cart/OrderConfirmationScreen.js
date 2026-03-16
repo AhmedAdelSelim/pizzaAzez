@@ -43,7 +43,7 @@ export default function OrderConfirmationScreen({ navigation, route }) {
                     <View style={styles.detailsCard}>
                         <View style={styles.detailRow}>
                             <Text style={styles.detailLabel}>رقم الطلب</Text>
-                            <Text style={styles.detailValue}>{order.orderId}</Text>
+                            <Text style={styles.detailValue}>{order.order.id.substring(0, 8)}</Text>
                         </View>
                         <View style={styles.divider} />
                         <View style={styles.detailRow}>
@@ -51,12 +51,12 @@ export default function OrderConfirmationScreen({ navigation, route }) {
                             <Text style={styles.detailValue}>{order.estimatedTime}</Text>
                         </View>
                         <View style={styles.divider} />
-                        {order.discount > 0 && (
+                        {order.order.discount > 0 && (
                             <>
                                 <View style={styles.detailRow}>
-                                    <Text style={styles.detailLabel}>الخصم ({order.couponCode})</Text>
+                                    <Text style={styles.detailLabel}>الخصم ({order.order.coupon_code})</Text>
                                     <Text style={[styles.detailValue, styles.discountText]}>
-                                        - {order.discount} ج.م
+                                        - {order.order.discount} ج.م
                                     </Text>
                                 </View>
                                 <View style={styles.divider} />
@@ -65,7 +65,7 @@ export default function OrderConfirmationScreen({ navigation, route }) {
                         <View style={styles.detailRow}>
                             <Text style={styles.detailLabel}>المجموع</Text>
                             <Text style={[styles.detailValue, styles.totalValue]}>
-                                {order.total} ج.م
+                                {order.order.total} ج.م
                             </Text>
                         </View>
                         <View style={styles.divider} />

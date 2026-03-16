@@ -11,7 +11,7 @@ import api from '../../services/api';
 
 export default function CheckoutScreen({ navigation }) {
     const { items, getSubtotal, getDeliveryFee, getTotal, getDiscount, appliedCoupon, clearCart, selectedZone, setDeliveryZone } = useCart();
-    const { user } = useAuth();
+    const { user, token } = useAuth();
     const [address, setAddress] = useState(user?.address || '');
     const [phone, setPhone] = useState(user?.phone || '');
     const [notes, setNotes] = useState('');
@@ -55,8 +55,9 @@ export default function CheckoutScreen({ navigation }) {
                 deliveryZone: selectedZone.name,
                 deliveryFee: getDeliveryFee(),
                 discount: getDiscount(),
+                total: getTotal(),
                 couponCode: appliedCoupon?.code || null,
-            });
+            }, token);
             clearCart();
             navigation.replace('OrderConfirmation', { order: result });
         } catch (error) {

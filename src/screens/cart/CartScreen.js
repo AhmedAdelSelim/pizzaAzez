@@ -8,6 +8,7 @@ import { useCart } from '../../context/CartContext';
 import CartItem from '../../components/CartItem';
 import Button from '../../components/Button';
 import EmptyState from '../../components/EmptyState';
+import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
 
 export default function CartScreen({ navigation }) {
@@ -16,6 +17,7 @@ export default function CartScreen({ navigation }) {
         getSubtotal, getDeliveryFee, getTotal, getItemCount,
         selectedZone, appliedCoupon, applyCoupon, removeCoupon, getDiscount
     } = useCart();
+    const { token } = useAuth();
 
     const [couponCode, setCouponCode] = useState('');
     const [validating, setValidating] = useState(false);
@@ -24,7 +26,7 @@ export default function CartScreen({ navigation }) {
         if (!couponCode.trim()) return;
         setValidating(true);
         try {
-            const coupon = await api.validateCoupon(couponCode.trim());
+            const coupon = await api.validateCoupon(couponCode.trim(), token);
             applyCoupon(coupon);
             setCouponCode('');
         } catch (error) {
