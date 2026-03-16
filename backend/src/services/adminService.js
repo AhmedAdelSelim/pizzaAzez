@@ -1,4 +1,4 @@
-const { orderRepository, menuItemRepository } = require('../repositories');
+const { orderRepository, menuItemRepository, storyRepository, userRepository, categoryRepository, couponRepository, deliveryZoneRepository } = require('../repositories');
 
 class AdminService {
     async getOrders() {
@@ -25,6 +25,80 @@ class AdminService {
 
     async deleteMenuItem(itemId) {
         return await menuItemRepository.delete({ id: itemId });
+    }
+
+    async getStories() {
+        return await storyRepository.find({});
+    }
+
+    async addStory(storyData) {
+        storyData.id = 'Story_' + Date.now();
+        return await storyRepository.create(storyData);
+    }
+
+    async deleteStory(storyId) {
+        return await storyRepository.delete({ id: storyId });
+    }
+
+    async getUsers() {
+        return await userRepository.find({});
+    }
+
+    async updateUserStatus(userId, isActive) {
+        return await userRepository.update({ id: userId }, { is_active: isActive });
+    }
+
+    // Categories
+    async getCategories() {
+        return await categoryRepository.find({});
+    }
+    async addCategory(data) {
+        data.id = 'Cat_' + Date.now();
+        return await categoryRepository.create(data);
+    }
+    async deleteCategory(id) {
+        return await categoryRepository.delete({ id });
+    }
+
+    // Coupons
+    async getCoupons() {
+        return await couponRepository.find({});
+    }
+    async addCoupon(data) {
+        data.code = data.code.toUpperCase();
+        return await couponRepository.create(data);
+    }
+    async deleteCoupon(id) {
+        return await couponRepository.delete({ id });
+    }
+
+    // Delivery Zones
+    async getDeliveryZones() {
+        return await deliveryZoneRepository.find({});
+    }
+    async addDeliveryZone(data) {
+        data.id = 'Zone_' + Date.now();
+        return await deliveryZoneRepository.create(data);
+    }
+    async updateDeliveryZone(id, updates) {
+        return await deliveryZoneRepository.update({ id }, updates);
+    }
+    async deleteDeliveryZone(id) {
+        return await deliveryZoneRepository.delete({ id });
+    }
+
+    // Stats
+    async getStats() {
+        const orders = await orderRepository.find({});
+        const users = await userRepository.find({});
+        const revenue = orders.reduce((sum, order) => sum + (parseFloat(order.total) || 0), 0);
+        
+        return {
+            totalOrders: orders.length,
+            totalUsers: users.length,
+            totalRevenue: revenue,
+            pendingOrders: orders.filter(o => o.status === 'preparing').length
+        };
     }
 }
 

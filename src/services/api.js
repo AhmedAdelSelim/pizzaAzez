@@ -139,6 +139,181 @@ const api = {
         return data;
     },
 
+    async getAdminUsers(token) {
+        const headers = { 'Authorization': `Bearer ${token}` };
+        const response = await fetch(`${BASE_URL}/admin/users`, { headers });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || 'فشل تحميل المستخدمين');
+        return data;
+    },
+
+    async updateUserStatus(userId, isActive, token) {
+        const headers = {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+        };
+        const response = await fetch(`${BASE_URL}/admin/users/${userId}/status`, {
+            method: 'PUT',
+            headers,
+            body: JSON.stringify({ isActive }),
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || 'فشل تحديث حالة المستخدم');
+        return data;
+    },
+
+    async getAdminCategories(token) {
+        const headers = { 'Authorization': `Bearer ${token}` };
+        const response = await fetch(`${BASE_URL}/admin/categories`, { headers });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || 'فشل تحميل الأقسام للإدارة');
+        return data;
+    },
+    async addCategory(data, token) {
+        const headers = {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+        };
+        const response = await fetch(`${BASE_URL}/admin/categories`, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify(data)
+        });
+        const data_ = await response.json();
+        if (!response.ok) throw new Error(data_.message || 'فشل إضافة القسم');
+        return data_;
+    },
+    async deleteCategory(id, token) {
+        const headers = { 'Authorization': `Bearer ${token}` };
+        const response = await fetch(`${BASE_URL}/admin/categories/${id}`, {
+            method: 'DELETE',
+            headers
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || 'فشل حذف القسم');
+        return data;
+    },
+
+    async getAdminCoupons(token) {
+        const headers = { 'Authorization': `Bearer ${token}` };
+        const response = await fetch(`${BASE_URL}/admin/coupons`, { headers });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || 'فشل تحميل الكوبونات للإدارة');
+        return data;
+    },
+    async addCoupon(data, token) {
+        const headers = {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+        };
+        const response = await fetch(`${BASE_URL}/admin/coupons`, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify(data)
+        });
+        const data_ = await response.json();
+        if (!response.ok) throw new Error(data_.message || 'فشل إضافة الكوبون');
+        return data_;
+    },
+    async deleteCoupon(id, token) {
+        const headers = { 'Authorization': `Bearer ${token}` };
+        const response = await fetch(`${BASE_URL}/admin/coupons/${id}`, {
+            method: 'DELETE',
+            headers
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || 'فشل حذف الكوبون');
+        return data;
+    },
+
+    async getAdminDeliveryZones(token) {
+        const headers = { 'Authorization': `Bearer ${token}` };
+        const response = await fetch(`${BASE_URL}/admin/delivery-zones`, { headers });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || 'فشل تحميل مناطق التوصيل للإدارة');
+        return data;
+    },
+    async addDeliveryZone(data, token) {
+        const headers = {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+        };
+        const response = await fetch(`${BASE_URL}/admin/delivery-zones`, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify(data)
+        });
+        const data_ = await response.json();
+        if (!response.ok) throw new Error(data_.message || 'فشل إضافة منطقة التوصيل');
+        return data_;
+    },
+    async updateDeliveryZone(id, data, token) {
+        const headers = {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+        };
+        const response = await fetch(`${BASE_URL}/admin/delivery-zones/${id}`, {
+            method: 'PUT',
+            headers,
+            body: JSON.stringify(data)
+        });
+        const data_ = await response.json();
+        if (!response.ok) throw new Error(data_.message || 'فشل تحديث منطقة التوصيل');
+        return data_;
+    },
+    async deleteDeliveryZone(id, token) {
+        const headers = { 'Authorization': `Bearer ${token}` };
+        const response = await fetch(`${BASE_URL}/admin/delivery-zones/${id}`, {
+            method: 'DELETE',
+            headers
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || 'فشل حذف منطقة التوصيل');
+        return data;
+    },
+
+    async getAdminStats(token) {
+        const headers = { 'Authorization': `Bearer ${token}` };
+        const response = await fetch(`${BASE_URL}/admin/stats`, { headers });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || 'فشل تحميل الإحصائيات');
+        return data;
+    },
+
+    async getAdminStories(token) {
+        const headers = { 'Authorization': `Bearer ${token}` };
+        const response = await fetch(`${BASE_URL}/admin/stories`, { headers });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || 'فشل تحميل القصص للإدارة');
+        return data;
+    },
+
+    async addStoryAdmin(storyData, token) {
+        const headers = { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}` 
+        };
+        const response = await fetch(`${BASE_URL}/admin/stories`, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify(storyData),
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || 'فشل إضافة القصة');
+        return data;
+    },
+
+    async deleteStoryAdmin(storyId, token) {
+        const headers = { 'Authorization': `Bearer ${token}` };
+        const response = await fetch(`${BASE_URL}/admin/stories/${storyId}`, {
+            method: 'DELETE',
+            headers,
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || 'فشل حذف القصة');
+        return data;
+    },
+
     async updateOrderStatus(orderId, status, token) {
         const headers = { 
             'Content-Type': 'application/json',

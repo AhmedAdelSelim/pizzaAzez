@@ -6,10 +6,12 @@ import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
 
 const STATUS_OPTIONS = [
-    { label: 'قيد التجهيز', value: 'preparing', color: COLORS.warning },
-    { label: 'جاهز للاستلام', value: 'ready', color: COLORS.success },
-    { label: 'في الطريق', value: 'on_way', color: COLORS.primary },
-    { label: 'مكتمل', value: 'completed', color: COLORS.success },
+    { label: 'تم الاستلام', value: 'pending', color: COLORS.textMuted },
+    { label: 'جاري التحضير', value: 'preparing', color: COLORS.warning },
+    { label: 'في الفرن', value: 'baking', color: '#E85D2C' },
+    { label: 'جاري التوصيل', value: 'shipping', color: COLORS.primary },
+    { label: 'تم التوصيل', value: 'delivered', color: COLORS.success },
+    { label: 'ملغي', value: 'cancelled', color: COLORS.error },
 ];
 
 export default function AdminOrdersScreen({ navigation }) {

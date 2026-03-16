@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { COLORS, FONTS, SIZES, SHADOWS } from '../../theme/theme';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
+import OrderJourneyTracker from '../../components/OrderJourneyTracker';
 
 export default function OrdersScreen({ navigation }) {
     const { token } = useAuth();
@@ -33,7 +34,10 @@ export default function OrdersScreen({ navigation }) {
 
     const getStatusColor = (status) => {
         switch (status) {
+            case 'pending': return '#9E9E9E';
             case 'preparing': return '#FFA000';
+            case 'baking': return '#E85D2C';
+            case 'shipping': return '#2196F3';
             case 'delivered': return '#2E7D32';
             case 'cancelled': return COLORS.error;
             default: return COLORS.textMuted;
@@ -42,7 +46,10 @@ export default function OrdersScreen({ navigation }) {
 
     const getStatusText = (status) => {
         switch (status) {
+            case 'pending': return 'تم الاستلام';
             case 'preparing': return 'جاري التحضير';
+            case 'baking': return 'في الفرن';
+            case 'shipping': return 'جاري التوصيل';
             case 'delivered': return 'تم التوصيل';
             case 'cancelled': return 'ملغي';
             default: return 'غير معروف';
@@ -65,6 +72,10 @@ export default function OrdersScreen({ navigation }) {
             </View>
         );
     }
+
+    const isActiveStatus = (status) => {
+        return ['pending', 'preparing', 'baking', 'shipping'].includes(status);
+    };
 
     return (
         <View style={styles.container}>
@@ -93,7 +104,7 @@ export default function OrdersScreen({ navigation }) {
                         <View style={styles.orderCard}>
                             <View style={styles.orderHeader}>
                                 <View>
-                                    <Text style={styles.orderId}>{item.id}</Text>
+                                    <Text style={styles.orderId}>طلب #{item.id.toString().slice(-6).toUpperCase()}</Text>
                                     <Text style={styles.orderDate}>{item.date}</Text>
                                 </View>
                                 <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status) + '20' }]}>
@@ -102,6 +113,13 @@ export default function OrdersScreen({ navigation }) {
                                     </Text>
                                 </View>
                             </View>
+
+                            {/* Journey Tracker for Active Orders */}
+                            {isActiveStatus(item.status) && (
+                                <View style={styles.trackerWrapper}>
+                                    <OrderJourneyTracker currentStatus={item.status} />
+                                </View>
+                            )}
 
                             <View style={styles.divider} />
 
@@ -112,6 +130,7 @@ export default function OrdersScreen({ navigation }) {
                                     </Text>
                                 ))}
                             </View>
+
 
                             <View style={styles.footer}>
                                 <Text style={styles.totalLabel}>الإجمالي: <Text style={styles.totalValue}>{item.total} ج.م</Text></Text>
@@ -233,6 +252,10 @@ const styles = StyleSheet.create({
         color: COLORS.primary,
         fontSize: SIZES.xs,
         ...FONTS.bold,
+    },
+    trackerWrapper: {
+        marginTop: 16,
+        marginBottom: 8,
     },
     emptyContainer: {
         flex: 1,

@@ -12,6 +12,7 @@ import CategoryCard from '../../components/CategoryCard';
 import FoodCard from '../../components/FoodCard';
 import SearchBar from '../../components/SearchBar';
 import StoryBar from '../../components/StoryBar';
+import CraveRecommendations from '../../components/CraveRecommendations';
 
 const { width } = Dimensions.get('window');
 
@@ -52,6 +53,9 @@ export default function HomeScreen({ navigation }) {
 
                 {/* Stories */}
                 <StoryBar onStoryPress={(story) => navigation.navigate('StoryView', { storyId: story.id })} />
+
+                {/* AI Recommendations */}
+                <CraveRecommendations onPress={() => navigation.navigate('MenuTab')} />
 
                 {/* Hero Banner (Offers) */}
                 <View style={styles.heroBanner}>
