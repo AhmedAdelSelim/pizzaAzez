@@ -2,6 +2,7 @@ import React, { createContext, useContext, useReducer, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import api from '../services/api';
 import { registerForPushNotificationsAsync } from '../utils/notifications';
+import { navigate } from '../utils/navigationUtils';
 
 const AuthContext = createContext();
 
@@ -133,6 +134,14 @@ export function AuthProvider({ children }) {
         }
     };
 
+    const ensureAuthenticated = () => {
+        if (!state.token) {
+            navigate('Login');
+            return false;
+        }
+        return true;
+    };
+
     return (
         <AuthContext.Provider
             value={{
@@ -141,6 +150,7 @@ export function AuthProvider({ children }) {
                 register,
                 logout,
                 updateProfile,
+                ensureAuthenticated,
             }}
         >
             {children}

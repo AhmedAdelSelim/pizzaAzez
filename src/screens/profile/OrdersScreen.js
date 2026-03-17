@@ -9,7 +9,11 @@ import api from '../../services/api';
 import OrderJourneyTracker from '../../components/OrderJourneyTracker';
 
 export default function OrdersScreen({ navigation }) {
-    const { token } = useAuth();
+    const { token, ensureAuthenticated } = useAuth();
+
+    useEffect(() => {
+        ensureAuthenticated();
+    }, [token]);
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
 

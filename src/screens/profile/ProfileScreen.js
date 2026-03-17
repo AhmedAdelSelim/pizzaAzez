@@ -17,7 +17,11 @@ const MENU_ITEMS_LIST = [
 ];
 
 export default function ProfileScreen({ navigation }) {
-    const { user, logout } = useAuth();
+    const { user, logout, ensureAuthenticated, token } = useAuth();
+
+    React.useEffect(() => {
+        ensureAuthenticated();
+    }, [token]);
 
     const handleLogout = () => {
         Alert.alert(

@@ -11,7 +11,11 @@ import api from '../../services/api';
 
 export default function CheckoutScreen({ navigation }) {
     const { items, getSubtotal, getDeliveryFee, getTotal, getDiscount, appliedCoupon, clearCart, selectedZone, setDeliveryZone } = useCart();
-    const { user, token } = useAuth();
+    const { user, token, ensureAuthenticated } = useAuth();
+
+    React.useEffect(() => {
+        ensureAuthenticated();
+    }, [token]);
     const [address, setAddress] = useState(user?.address || '');
     const [phone, setPhone] = useState(user?.phone || '');
     const [notes, setNotes] = useState('');
