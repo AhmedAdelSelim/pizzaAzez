@@ -40,6 +40,7 @@ import AdminUsersScreen from '../screens/admin/AdminUsersScreen';
 import AdminCategoriesScreen from '../screens/admin/AdminCategoriesScreen';
 import AdminCouponsScreen from '../screens/admin/AdminCouponsScreen';
 import AdminDeliveryZonesScreen from '../screens/admin/AdminDeliveryZonesScreen';
+import AdminOrderStatsScreen from '../screens/admin/AdminOrderStatsScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -187,6 +188,7 @@ function MainStack() {
             <Stack.Screen name="AdminCategories" component={AdminCategoriesScreen} />
             <Stack.Screen name="AdminCoupons" component={AdminCouponsScreen} />
             <Stack.Screen name="AdminDeliveryZones" component={AdminDeliveryZonesScreen} />
+            <Stack.Screen name="AdminOrderStats" component={AdminOrderStatsScreen} />
         </Stack.Navigator>
     );
 }
@@ -204,6 +206,7 @@ function AdminStack() {
             <Stack.Screen name="AdminCategories" component={AdminCategoriesScreen} />
             <Stack.Screen name="AdminCoupons" component={AdminCouponsScreen} />
             <Stack.Screen name="AdminDeliveryZones" component={AdminDeliveryZonesScreen} />
+            <Stack.Screen name="AdminOrderStats" component={AdminOrderStatsScreen} />
         </Stack.Navigator>
     );
 }

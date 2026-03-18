@@ -85,6 +85,7 @@ async function routes(fastify, options) {
             adminFastify.delete('/api/admin/delivery-zones/:id', adminController.deleteDeliveryZone);
 
             adminFastify.get('/api/admin/stats', adminController.getStats);
+            adminFastify.get('/api/admin/stats/daily', adminController.getDailyStats);
         });
     });
 }

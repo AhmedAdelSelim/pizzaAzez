@@ -186,6 +186,15 @@ const adminController = {
         } catch (error) {
             return reply.status(400).send({ message: error.message });
         }
+    },
+
+    async getDailyStats(request, reply) {
+        try {
+            const result = await adminService.getDailyStats();
+            reply.send(result);
+        } catch (error) {
+            return reply.status(400).send({ message: error.message });
+        }
     }
 };
 

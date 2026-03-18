@@ -100,6 +100,24 @@ class AdminService {
             pendingOrders: orders.filter(o => o.status === 'preparing').length
         };
     }
+
+    async getDailyStats() {
+        const orders = await orderRepository.find({});
+        const dailyData = {};
+
+        orders.forEach(order => {
+            const date = order.date; // already in YYYY-MM-DD
+            if (!dailyData[date]) {
+                dailyData[date] = { date, total: 0, completed: 0, cancelled: 0 };
+            }
+            dailyData[date].total++;
+            if (order.status === 'delivered') dailyData[date].completed++;
+            if (order.status === 'cancelled') dailyData[date].cancelled++;
+        });
+
+        // Convert to array and sort by date descending
+        return Object.values(dailyData).sort((a, b) => new Date(b.date) - new Date(a.date));
+    }
 }
 
 module.exports = AdminService;

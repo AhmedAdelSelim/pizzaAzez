@@ -296,6 +296,15 @@ const api = {
         return data;
     },
 
+    async getAdminDailyStats(token) {
+        const headers = {};
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+        const response = await fetch(`${BASE_URL}/admin/stats/daily`, { headers });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || 'فشل تحميل إحصائيات الأيام');
+        return data;
+    },
+
     async getAdminStories(token) {
         const headers = {};
         if (token) headers['Authorization'] = `Bearer ${token}`;

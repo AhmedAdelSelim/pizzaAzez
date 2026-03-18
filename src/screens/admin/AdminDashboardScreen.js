@@ -130,6 +130,12 @@ export default function AdminDashboardScreen({ navigation }) {
                     icon="people-outline" 
                     screen="AdminUsers" 
                 />
+                <MenuCard 
+                    title="إحصائيات الأيام" 
+                    subtitle="متابعة أداء الطلبات اليومي" 
+                    icon="bar-chart-outline" 
+                    screen="AdminOrderStats" 
+                />
 
                 <Text style={styles.sectionTitle}>إدارة المحتوى</Text>
                 <MenuCard 
