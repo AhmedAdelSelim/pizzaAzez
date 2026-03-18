@@ -3,12 +3,15 @@ const BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://192.168.1.29:3000/ap
 
 const api = {
     async login(phone, password) {
+        console.log('API: Attempting login for:', phone);
         const response = await fetch(`${BASE_URL}/auth/login`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ phone, password }),
         });
         const data = await response.json();
+        console.log('API: Login response status:', response.status);
+        console.log('API: Login response data:', JSON.stringify(data));
         if (!response.ok) throw new Error(data.message || 'خطأ في تسجيل الدخول');
         return data;
     },
@@ -104,6 +107,7 @@ const api = {
     },
 
     async getStories() {
+        console.log('Fetching stories from:', `${BASE_URL}/stories`);
         const response = await fetch(`${BASE_URL}/stories`);
         const data = await response.json();
         if (!response.ok) throw new Error('فشل تحميل القصص');
@@ -135,7 +139,8 @@ const api = {
 
     // Admin endpoints
     async getAdminOrders(token) {
-        const headers = { 'Authorization': `Bearer ${token}` };
+        const headers = {};
+        if (token) headers['Authorization'] = `Bearer ${token}`;
         const response = await fetch(`${BASE_URL}/admin/orders`, { headers });
         const data = await response.json();
         if (!response.ok) throw new Error(data.message || 'فشل تحميل طلبات الإدارة');
@@ -143,7 +148,8 @@ const api = {
     },
 
     async getAdminUsers(token) {
-        const headers = { 'Authorization': `Bearer ${token}` };
+        const headers = {};
+        if (token) headers['Authorization'] = `Bearer ${token}`;
         const response = await fetch(`${BASE_URL}/admin/users`, { headers });
         const data = await response.json();
         if (!response.ok) throw new Error(data.message || 'فشل تحميل المستخدمين');
@@ -166,7 +172,8 @@ const api = {
     },
 
     async getAdminCategories(token) {
-        const headers = { 'Authorization': `Bearer ${token}` };
+        const headers = {};
+        if (token) headers['Authorization'] = `Bearer ${token}`;
         const response = await fetch(`${BASE_URL}/admin/categories`, { headers });
         const data = await response.json();
         if (!response.ok) throw new Error(data.message || 'فشل تحميل الأقسام للإدارة');
@@ -187,7 +194,8 @@ const api = {
         return data_;
     },
     async deleteCategory(id, token) {
-        const headers = { 'Authorization': `Bearer ${token}` };
+        const headers = {};
+        if (token) headers['Authorization'] = `Bearer ${token}`;
         const response = await fetch(`${BASE_URL}/admin/categories/${id}`, {
             method: 'DELETE',
             headers
@@ -198,7 +206,8 @@ const api = {
     },
 
     async getAdminCoupons(token) {
-        const headers = { 'Authorization': `Bearer ${token}` };
+        const headers = {};
+        if (token) headers['Authorization'] = `Bearer ${token}`;
         const response = await fetch(`${BASE_URL}/admin/coupons`, { headers });
         const data = await response.json();
         if (!response.ok) throw new Error(data.message || 'فشل تحميل الكوبونات للإدارة');
@@ -219,7 +228,8 @@ const api = {
         return data_;
     },
     async deleteCoupon(id, token) {
-        const headers = { 'Authorization': `Bearer ${token}` };
+        const headers = {};
+        if (token) headers['Authorization'] = `Bearer ${token}`;
         const response = await fetch(`${BASE_URL}/admin/coupons/${id}`, {
             method: 'DELETE',
             headers
@@ -230,7 +240,8 @@ const api = {
     },
 
     async getAdminDeliveryZones(token) {
-        const headers = { 'Authorization': `Bearer ${token}` };
+        const headers = {};
+        if (token) headers['Authorization'] = `Bearer ${token}`;
         const response = await fetch(`${BASE_URL}/admin/delivery-zones`, { headers });
         const data = await response.json();
         if (!response.ok) throw new Error(data.message || 'فشل تحميل مناطق التوصيل للإدارة');
@@ -265,7 +276,8 @@ const api = {
         return data_;
     },
     async deleteDeliveryZone(id, token) {
-        const headers = { 'Authorization': `Bearer ${token}` };
+        const headers = {};
+        if (token) headers['Authorization'] = `Bearer ${token}`;
         const response = await fetch(`${BASE_URL}/admin/delivery-zones/${id}`, {
             method: 'DELETE',
             headers
@@ -276,7 +288,8 @@ const api = {
     },
 
     async getAdminStats(token) {
-        const headers = { 'Authorization': `Bearer ${token}` };
+        const headers = {};
+        if (token) headers['Authorization'] = `Bearer ${token}`;
         const response = await fetch(`${BASE_URL}/admin/stats`, { headers });
         const data = await response.json();
         if (!response.ok) throw new Error(data.message || 'فشل تحميل الإحصائيات');
@@ -284,7 +297,8 @@ const api = {
     },
 
     async getAdminStories(token) {
-        const headers = { 'Authorization': `Bearer ${token}` };
+        const headers = {};
+        if (token) headers['Authorization'] = `Bearer ${token}`;
         const response = await fetch(`${BASE_URL}/admin/stories`, { headers });
         const data = await response.json();
         if (!response.ok) throw new Error(data.message || 'فشل تحميل القصص للإدارة');
@@ -307,7 +321,8 @@ const api = {
     },
 
     async deleteStoryAdmin(storyId, token) {
-        const headers = { 'Authorization': `Bearer ${token}` };
+        const headers = {};
+        if (token) headers['Authorization'] = `Bearer ${token}`;
         const response = await fetch(`${BASE_URL}/admin/stories/${storyId}`, {
             method: 'DELETE',
             headers,
@@ -363,7 +378,8 @@ const api = {
     },
 
     async deleteMenuItemAdmin(itemId, token) {
-        const headers = { 'Authorization': `Bearer ${token}` };
+        const headers = {};
+        if (token) headers['Authorization'] = `Bearer ${token}`;
         const response = await fetch(`${BASE_URL}/admin/menu/${itemId}`, {
             method: 'DELETE',
             headers,

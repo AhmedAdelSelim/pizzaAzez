@@ -209,9 +209,9 @@ function AdminStack() {
 }
 
 function AppNavigator() {
-    const { user, token, isLoading } = useAuth();
+    const { user, token, isInitialLoading } = useAuth();
 
-    if (isLoading) {
+    if (isInitialLoading) {
         return (
             <View style={styles.loadingContainer}>
                 <Image

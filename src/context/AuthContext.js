@@ -11,7 +11,8 @@ const AUTH_STORAGE_KEY = '@pizzaAzez_auth';
 const initialState = {
     user: null,
     token: null,
-    isLoading: true,
+    isLoading: false,
+    isInitialLoading: true,
     error: null,
 };
 
@@ -28,15 +29,20 @@ function authReducer(state, action) {
                 error: null,
             };
         case 'LOGOUT':
-            return { ...initialState, isLoading: false };
+            return { ...initialState, isInitialLoading: false };
         case 'SET_ERROR':
-            return { ...state, error: action.payload, isLoading: false };
+            return { ...state, error: action.payload, isLoading: false, isInitialLoading: false };
         case 'RESTORE_TOKEN':
             return {
                 ...state,
                 user: action.payload.user,
                 token: action.payload.token,
-                isLoading: false,
+                isInitialLoading: false,
+            };
+        case 'FINISH_RESTORE':
+            return {
+                ...state,
+                isInitialLoading: false,
             };
         case 'UPDATE_PROFILE':
             return { ...state, user: state.user ? { ...state.user, ...action.payload } : action.payload };
@@ -64,10 +70,10 @@ export function AuthProvider({ children }) {
                     handlePushRegistration(user, token);
                 }
             } else {
-                dispatch({ type: 'LOGOUT' });
+                dispatch({ type: 'FINISH_RESTORE' });
             }
         } catch {
-            dispatch({ type: 'LOGOUT' });
+            dispatch({ type: 'FINISH_RESTORE' });
         }
     };
 
@@ -75,7 +81,7 @@ export function AuthProvider({ children }) {
         try {
             const pushToken = await registerForPushNotificationsAsync();
             if (pushToken && pushToken !== user.push_token) {
-                await updateProfile({ push_token: pushToken });
+                await updateProfile({ push_token: pushToken }, token);
             }
         } catch (error) {
             console.log('Error registering for push notifications:', error);
@@ -83,19 +89,32 @@ export function AuthProvider({ children }) {
     };
 
     const login = async (phone, password) => {
+        console.log('AuthContext: Starting login for:', phone);
         dispatch({ type: 'SET_LOADING' });
         try {
             const result = await api.login(phone, password);
+            console.log('AuthContext: API result received:', !!result.user, !!result.token);
+            
+            if (!result || !result.user || !result.token) {
+                console.error('AuthContext: Invalid login data:', result);
+                throw new Error('بيانات الدخول غير مكتملة من الخادم');
+            }
+
             await AsyncStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(result));
+            console.log('AuthContext: Storage updated, dispatching success');
             dispatch({ type: 'LOGIN_SUCCESS', payload: result });
             
-            // If admin, register for push notifications
+            // If admin, register for push notifications and redirect will happen via AppNavigator stack switch
             if (result.user.role === 'admin') {
                 handlePushRegistration(result.user, result.token);
+            } else {
+                // Regular user needs manual navigation because they stay in MainStack
+                navigate('HomeTabs');
             }
             
             return result;
         } catch (error) {
+            console.error('AuthContext: Login error caught:', error.message);
             dispatch({ type: 'SET_ERROR', payload: error.message });
             throw error;
         }
@@ -105,8 +124,14 @@ export function AuthProvider({ children }) {
         dispatch({ type: 'SET_LOADING' });
         try {
             const result = await api.register(userData);
+            
+            if (!result || !result.user || !result.token) {
+                throw new Error('فشل إنشاء الحساب، يرجى المحاولة مرة أخرى');
+            }
+
             await AsyncStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(result));
             dispatch({ type: 'LOGIN_SUCCESS', payload: result });
+            navigate('HomeTabs');
             return result;
         } catch (error) {
             dispatch({ type: 'SET_ERROR', payload: error.message });
@@ -119,9 +144,10 @@ export function AuthProvider({ children }) {
         dispatch({ type: 'LOGOUT' });
     };
 
-    const updateProfile = async (updates) => {
+    const updateProfile = async (updates, customToken = null) => {
         try {
-            const updatedUser = await api.updateProfile(updates, state.token);
+            const activeToken = customToken || state.token;
+            const updatedUser = await api.updateProfile(updates, activeToken);
             await AsyncStorage.setItem(
                 AUTH_STORAGE_KEY,
                 JSON.stringify({ user: updatedUser, token: state.token })
