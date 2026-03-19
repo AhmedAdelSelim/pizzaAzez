@@ -58,12 +58,12 @@ const orderController = {
 };
 
 const profileController = {
-    async getProfile() {
-        return await profileService.getProfile();
+    async getProfile(request, reply) {
+        return await profileService.getProfile(request.user.id);
     },
 
-    async updateProfile(request) {
-        return await profileService.updateProfile(request.body);
+    async updateProfile(request, reply) {
+        return await profileService.updateProfile(request.user.id, request.body);
     }
 };
 

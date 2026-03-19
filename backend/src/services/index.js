@@ -108,15 +108,12 @@ class OrderService {
 }
 
 class ProfileService {
-    async getProfile() {
-        // Simple demo: return the first user
-        return await userRepository.findOne({});
+    async getProfile(userId) {
+        return await userRepository.findOne({ id: userId });
     }
 
-    async updateProfile(updates) {
-        const user = await userRepository.findOne({});
-        if (!user) throw new Error('User not found');
-        return await userRepository.update({ id: user.id }, updates);
+    async updateProfile(userId, updates) {
+        return await userRepository.update({ id: userId }, updates);
     }
 }
 

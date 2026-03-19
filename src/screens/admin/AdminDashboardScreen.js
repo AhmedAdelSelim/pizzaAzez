@@ -52,7 +52,7 @@ export default function AdminDashboardScreen({ navigation }) {
         </View>
     );
 
-    const MenuCard = ({ title, subtitle, icon, screen }) => (
+    const MenuCard = ({ title, subtitle, icon, screen, badge }) => (
         <TouchableOpacity
             style={styles.card}
             activeOpacity={0.8}
@@ -60,6 +60,11 @@ export default function AdminDashboardScreen({ navigation }) {
         >
             <View style={styles.iconContainer}>
                 <Ionicons name={icon} size={32} color={COLORS.primary} />
+                {badge > 0 && (
+                    <View style={styles.badgeContainer}>
+                        <Text style={styles.badgeText}>{badge > 99 ? '99+' : badge}</Text>
+                    </View>
+                ) }
             </View>
             <View style={styles.cardTextContainer}>
                 <Text style={styles.cardTitle}>{title}</Text>
@@ -123,6 +128,7 @@ export default function AdminDashboardScreen({ navigation }) {
                     subtitle="متابعة وتحديث حالة طلبات العملاء" 
                     icon="list" 
                     screen="AdminOrders" 
+                    badge={stats?.pendingOrders}
                 />
                 <MenuCard 
                     title="شكاوي واقتراحات" 
@@ -135,6 +141,7 @@ export default function AdminDashboardScreen({ navigation }) {
                     subtitle="مراجعة وقبول طلبات العضوية المميزة" 
                     icon="star-outline" 
                     screen="AdminVipRequests" 
+                    badge={stats?.pendingVipRequests}
                 />
                 <MenuCard 
                     title="العملاء الأكثر نشاطاً" 
@@ -284,5 +291,24 @@ const styles = StyleSheet.create({
         paddingVertical: 4,
         borderRadius: 12
     },
-    orderCountText: { color: COLORS.primary, fontSize: 10, ...FONTS.bold }
+    orderCountText: { color: COLORS.primary, fontSize: 10, ...FONTS.bold },
+    badgeContainer: {
+        position: 'absolute',
+        top: -5,
+        right: -5,
+        backgroundColor: COLORS.primary,
+        borderRadius: 10,
+        minWidth: 18,
+        height: 18,
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 1.5,
+        borderColor: COLORS.surface,
+        paddingHorizontal: 4,
+    },
+    badgeText: {
+        color: COLORS.white,
+        fontSize: 10,
+        ...FONTS.bold,
+    }
 });

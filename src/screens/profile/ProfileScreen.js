@@ -1,10 +1,11 @@
 import React from 'react';
 import {
-    View, Text, StyleSheet, ScrollView, TouchableOpacity, StatusBar, Alert, Image,
+    View, Text, StyleSheet, ScrollView, TouchableOpacity, StatusBar, Alert, Image, ActivityIndicator, Modal
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, FONTS, SIZES, SHADOWS } from '../../theme/theme';
 import { useAuth } from '../../context/AuthContext';
+import api from '../../services/api';
 
 const MENU_ITEMS_LIST = [
     { icon: 'person-outline', label: 'تعديل الملف الشخصي', route: 'EditProfile' },
@@ -18,6 +19,8 @@ const MENU_ITEMS_LIST = [
 
 export default function ProfileScreen({ navigation }) {
     const { user, logout, ensureAuthenticated, token, refreshProfile } = useAuth();
+    const [isRequesting, setIsRequesting] = React.useState(false);
+    const [showVipModal, setShowVipModal] = React.useState(false);
 
     React.useEffect(() => {
         ensureAuthenticated();
@@ -60,7 +63,7 @@ export default function ProfileScreen({ navigation }) {
                     <View style={styles.userInfo}>
                         <Text style={styles.userName}>{user?.name || 'المستخدم'}</Text>
                         <Text style={styles.userPhone}>{user?.phone || 'بدون رقم هاتف'}</Text>
-                        
+
                         {/* VIP Status/Request Button */}
                         <View style={styles.vipContainer}>
                             {user?.vip_status === 'vip' ? (
@@ -72,20 +75,19 @@ export default function ProfileScreen({ navigation }) {
                                     <Text style={styles.badgeText}>الطلب قيد المراجعة</Text>
                                 </View>
                             ) : (
-                                <TouchableOpacity 
-                                    style={styles.vipRequestButton}
-                                    onPress={async () => {
-                                        try {
-                                            await api.requestVip(token);
-                                            await refreshProfile();
-                                            Alert.alert('تم الإرسال', 'تم إرسال طلب الانضمام للـ VIP بنجاح');
-                                        } catch (error) {
-                                            Alert.alert('خطأ', error.message);
-                                        }
-                                    }}
+                                <TouchableOpacity
+                                    style={[styles.vipRequestButton, isRequesting && { opacity: 0.7 }]}
+                                    disabled={isRequesting}
+                                    onPress={() => setShowVipModal(true)}
                                 >
-                                    <Ionicons name="star" size={14} color={COLORS.white} />
-                                    <Text style={styles.vipRequestText}>انضم للـ VIP</Text>
+                                    {isRequesting ? (
+                                        <ActivityIndicator size="small" color={COLORS.white} />
+                                    ) : (
+                                        <>
+                                            <Ionicons name="star" size={14} color={COLORS.white} />
+                                            <Text style={styles.vipRequestText}>انضم للـ VIP</Text>
+                                        </>
+                                    )}
                                 </TouchableOpacity>
                             )}
                         </View>
@@ -138,6 +140,69 @@ export default function ProfileScreen({ navigation }) {
 
                 <Text style={styles.version}>بيتزا عزيز  •  الإصدار ١.٠.٠</Text>
             </ScrollView>
+
+            {/* VIP Benefits Modal */}
+            <Modal
+                visible={showVipModal}
+                transparent={true}
+                animationType="fade"
+                onRequestClose={() => setShowVipModal(false)}
+            >
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalContent}>
+                        <View style={styles.modalHeader}>
+                            <Ionicons name="star" size={30} color="#FFD700" />
+                            <Text style={styles.modalTitle}>مميزات عضوية VIP</Text>
+                        </View>
+
+                        <View style={styles.benefitsList}>
+                            <BenefitItem icon="gift-outline" text="خصومات حصرية تصل إلى ٢٥٪ على جميع الطلبات" />
+                            <BenefitItem icon="restaurant-outline" text="تجربة أصناف جديدة قبل الجميع" />
+                            <BenefitItem icon="headset-outline" text="خدمة عملاء مخصصة وذات أولوية" />
+                        </View>
+
+                        <TouchableOpacity
+                            style={[styles.confirmVipButton, isRequesting && { opacity: 0.7 }]}
+                            disabled={isRequesting}
+                            onPress={async () => {
+                                try {
+                                    setIsRequesting(true);
+                                    await api.requestVip(token);
+                                    setShowVipModal(false);
+                                    Alert.alert('تم الإرسال', 'تم إرسال طلب الانضمام للـ VIP بنجاح');
+                                    await refreshProfile();
+                                } catch (error) {
+                                    Alert.alert('خطأ', error.message);
+                                } finally {
+                                    setIsRequesting(false);
+                                }
+                            }}
+                        >
+                            {isRequesting ? (
+                                <ActivityIndicator color={COLORS.white} />
+                            ) : (
+                                <Text style={styles.confirmVipText}>تأكيد طلب الانضمام</Text>
+                            )}
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                            style={styles.closeModalButton}
+                            onPress={() => setShowVipModal(false)}
+                        >
+                            <Text style={styles.closeModalText}>إلغاء</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
+        </View>
+    );
+}
+
+function BenefitItem({ icon, text }) {
+    return (
+        <View style={styles.benefitItem}>
+            <Ionicons name={icon} size={22} color={COLORS.primary} />
+            <Text style={styles.benefitText}>{text}</Text>
         </View>
     );
 }
@@ -295,5 +360,66 @@ const styles = StyleSheet.create({
         ...FONTS.regular,
         textAlign: 'center',
         marginTop: 20,
+    },
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.6)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: SIZES.spacing_xl,
+    },
+    modalContent: {
+        backgroundColor: COLORS.surface,
+        borderRadius: SIZES.radius_xxl,
+        padding: SIZES.spacing_xxl,
+        width: '100%',
+        ...SHADOWS.medium,
+    },
+    modalHeader: {
+        alignItems: 'center',
+        marginBottom: SIZES.spacing_xl,
+        gap: 8,
+    },
+    modalTitle: {
+        color: COLORS.text,
+        fontSize: SIZES.xl,
+        ...FONTS.bold,
+    },
+    benefitsList: {
+        marginBottom: SIZES.spacing_xxl,
+        gap: 16,
+    },
+    benefitItem: {
+        flexDirection: 'row-reverse',
+        alignItems: 'center',
+        gap: 12,
+    },
+    benefitText: {
+        flex: 1,
+        color: COLORS.text,
+        fontSize: SIZES.base,
+        ...FONTS.medium,
+        textAlign: 'right',
+    },
+    confirmVipButton: {
+        backgroundColor: COLORS.primary,
+        borderRadius: SIZES.radius_xl,
+        paddingVertical: 14,
+        alignItems: 'center',
+        marginBottom: 12,
+    },
+    confirmVipText: {
+        color: COLORS.white,
+        fontSize: SIZES.base,
+        ...FONTS.bold,
+    },
+    closeModalButton: {
+        paddingVertical: 8,
+        alignItems: 'center',
+    },
+    closeModalText: {
+        color: COLORS.textMuted,
+        fontSize: SIZES.sm,
+        ...FONTS.medium,
     },
 });

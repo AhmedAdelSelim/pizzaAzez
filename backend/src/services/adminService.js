@@ -101,7 +101,8 @@ class AdminService {
             totalOrders: orders.length,
             totalUsers: users.length,
             totalRevenue: revenue,
-            pendingOrders: orders.filter(o => o.status === 'preparing').length,
+            pendingOrders: orders.filter(o => o.status === 'preparing' || o.status === 'on_the_way').length,
+            pendingVipRequests: users.filter(u => u.vip_status === 'pending').length,
             activeUsers
         };
     }
