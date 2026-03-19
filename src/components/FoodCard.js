@@ -13,7 +13,7 @@ export default function FoodCard({ item, onPress, onAddToCart }) {
     };
 
     return (
-        <View style={styles.cardContainer}>
+        <View style={[{ padding: 5 }, styles.cardContainer]}>
             <TouchableOpacity
                 onPress={() => onPress(item)}
                 activeOpacity={0.9}

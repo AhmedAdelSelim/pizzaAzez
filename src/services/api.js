@@ -396,6 +396,63 @@ const api = {
         const data = await response.json();
         if (!response.ok) throw new Error(data.message || 'فشل حذف العنصر');
         return data;
+    },
+    
+    async submitSuggestion(content, token) {
+        const headers = { 'Content-Type': 'application/json' };
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+
+        const response = await fetch(`${BASE_URL}/suggestions`, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({ content }),
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || 'فشل إرسال الاقتراح');
+        return data;
+    },
+
+    async getAdminSuggestions(token) {
+        const headers = {};
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+        const response = await fetch(`${BASE_URL}/admin/suggestions`, { headers });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || 'فشل تحميل الاقتراحات');
+        return data;
+    },
+
+    async requestVip(token) {
+        const headers = { 'Authorization': `Bearer ${token}` };
+        const response = await fetch(`${BASE_URL}/vip/request`, {
+            method: 'POST',
+            headers
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || 'فشل إرسال طلب VIP');
+        return data;
+    },
+
+    async getAdminVipRequests(token) {
+        const headers = { 'Authorization': `Bearer ${token}` };
+        const response = await fetch(`${BASE_URL}/admin/vip-requests`, { headers });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || 'فشل تحميل طلبات VIP');
+        return data;
+    },
+
+    async handleVipRequest(userId, status, token) {
+        const headers = {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+        };
+        const response = await fetch(`${BASE_URL}/admin/vip-requests/handle`, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({ userId, status }),
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || 'فشل معالجة الطلب');
+        return data;
     }
 };
 

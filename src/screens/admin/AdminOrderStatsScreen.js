@@ -46,6 +46,11 @@ export default function AdminOrderStatsScreen({ navigation }) {
                     <Text style={[styles.statValue, { color: COLORS.success }]}>{item.completed}</Text>
                     <Text style={styles.statLabel}>تم التوصيل</Text>
                 </View>
+
+                <View style={[styles.statItem, styles.borderLeft]}>
+                    <Text style={[styles.statValue, { color: COLORS.primary }]}>{item.revenue || 0} ج.م</Text>
+                    <Text style={styles.statLabel}>إجمالي المبيعات</Text>
+                </View>
                 
                 <View style={[styles.statItem, styles.borderLeft]}>
                     <Text style={[styles.statValue, { color: COLORS.error }]}>{item.cancelled}</Text>

@@ -4,6 +4,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { COLORS, FONTS, SIZES, SHADOWS } from '../../theme/theme';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
+import SearchBar from '../../components/SearchBar';
+import { searchFilter } from '../../utils/searchUtils';
 
 const STATUS_OPTIONS = [
     { label: 'تم الاستلام', value: 'pending', color: COLORS.textMuted },
@@ -18,6 +20,11 @@ export default function AdminOrdersScreen({ navigation }) {
     const { token } = useAuth();
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [searchQuery, setSearchQuery] = useState('');
+
+    const filteredOrders = React.useMemo(() => {
+        return searchFilter(orders, searchQuery, ['id', 'phone']);
+    }, [orders, searchQuery]);
 
     const loadOrders = async () => {
         try {
@@ -103,8 +110,16 @@ export default function AdminOrdersScreen({ navigation }) {
                 <View style={{ width: 40 }} />
             </View>
 
+            <View style={styles.searchSection}>
+                <SearchBar 
+                    placeholder="ابحث برقم الهاتف أو رقم الطلب..." 
+                    value={searchQuery} 
+                    onChangeText={setSearchQuery} 
+                />
+            </View>
+
             <FlatList
-                data={orders}
+                data={filteredOrders}
                 renderItem={renderOrder}
                 keyExtractor={item => item.id}
                 contentContainerStyle={styles.listContainer}
@@ -140,7 +155,11 @@ const styles = StyleSheet.create({
         ...SHADOWS.small
     },
     title: { color: COLORS.text, fontSize: SIZES.xl, ...FONTS.bold },
-    listContainer: { padding: SIZES.spacing_xl, gap: SIZES.spacing_md, paddingBottom: 100 },
+    searchSection: {
+        paddingHorizontal: SIZES.spacing_xl,
+        marginBottom: SIZES.spacing_md,
+    },
+    listContainer: { paddingHorizontal: SIZES.spacing_xl, paddingBottom: 100, gap: SIZES.spacing_md },
     orderCard: {
         backgroundColor: COLORS.surface,
         borderRadius: SIZES.radius_lg,

@@ -17,12 +17,15 @@ export default function MenuScreen({ navigation, route }) {
     const [searchQuery, setSearchQuery] = useState(route?.params?.searchQuery || '');
 
     const filteredItems = useMemo(() => {
+        // If there's a search query, search globally across all categories
         let items = searchQuery ? searchItems(searchQuery) : menuItems;
-        if (selectedCategory) {
+        
+        // Only apply category filter if NOT searching
+        if (selectedCategory && !searchQuery) {
             items = items.filter(item => item.category_id === selectedCategory);
         }
         return items;
-    }, [menuItems, selectedCategory, searchQuery]);
+    }, [menuItems, selectedCategory, searchQuery, searchItems]);
 
     const handleAddToCart = (item) => {
         if (item.sizes && item.sizes.length > 0) {

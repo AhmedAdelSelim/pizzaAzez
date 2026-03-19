@@ -91,14 +91,54 @@ class AdminService {
     async getStats() {
         const orders = await orderRepository.find({});
         const users = await userRepository.find({});
-        const revenue = orders.reduce((sum, order) => sum + (parseFloat(order.total) || 0), 0);
+        const revenue = orders
+            .filter(order => order.status === 'delivered')
+            .reduce((sum, order) => sum + (parseFloat(order.total) || 0), 0);
+        
+        const activeUsers = await this.getActiveUsers(orders, users);
         
         return {
             totalOrders: orders.length,
             totalUsers: users.length,
             totalRevenue: revenue,
-            pendingOrders: orders.filter(o => o.status === 'preparing').length
+            pendingOrders: orders.filter(o => o.status === 'preparing').length,
+            activeUsers
         };
+    }
+
+    async getActiveUsers(orders, allUsers) {
+        const userStats = {};
+        
+        orders.forEach(order => {
+            // Use user_id if available, otherwise fallback to phone
+            const identifier = order.user_id || order.phone;
+            if (!identifier) return;
+
+            if (!userStats[identifier]) {
+                userStats[identifier] = {
+                    count: 0,
+                    name: order.customer_name || 'عميل',
+                    phone: order.phone || '-'
+                };
+            }
+            userStats[identifier].count++;
+        });
+
+        const activeUsers = Object.entries(userStats)
+            .map(([id, stats]) => {
+                // Find real user by ID OR by phone (since id could be either due to fallback)
+                const user = allUsers.find(u => u.id === id || u.phone === id);
+                return {
+                    id,
+                    name: user?.name || stats.name || 'مستخدم غير معروف',
+                    phone: user?.phone || stats.phone || '-',
+                    orderCount: stats.count
+                };
+            })
+            .sort((a, b) => b.orderCount - a.orderCount)
+            .slice(0, 5); // Top 5
+
+        return activeUsers;
     }
 
     async getDailyStats() {
@@ -108,10 +148,13 @@ class AdminService {
         orders.forEach(order => {
             const date = order.date; // already in YYYY-MM-DD
             if (!dailyData[date]) {
-                dailyData[date] = { date, total: 0, completed: 0, cancelled: 0 };
+                dailyData[date] = { date, total: 0, completed: 0, cancelled: 0, revenue: 0 };
             }
             dailyData[date].total++;
-            if (order.status === 'delivered') dailyData[date].completed++;
+            if (order.status === 'delivered') {
+                dailyData[date].completed++;
+                dailyData[date].revenue += (parseFloat(order.total) || 0);
+            }
             if (order.status === 'cancelled') dailyData[date].cancelled++;
         });
 

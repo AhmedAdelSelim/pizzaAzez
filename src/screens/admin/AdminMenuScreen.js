@@ -4,11 +4,18 @@ import { Ionicons } from '@expo/vector-icons';
 import { COLORS, FONTS, SIZES, SHADOWS } from '../../theme/theme';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
+import SearchBar from '../../components/SearchBar';
+import { searchFilter } from '../../utils/searchUtils';
 
 export default function AdminMenuScreen({ navigation }) {
     const { token } = useAuth();
     const [menuItems, setMenuItems] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [searchQuery, setSearchQuery] = useState('');
+
+    const filteredItems = React.useMemo(() => {
+        return searchFilter(menuItems, searchQuery, ['name', 'category_id']);
+    }, [menuItems, searchQuery]);
 
     const loadMenu = async () => {
         try {
@@ -95,8 +102,16 @@ export default function AdminMenuScreen({ navigation }) {
                 </TouchableOpacity>
             </View>
 
+            <View style={styles.searchSection}>
+                <SearchBar 
+                    placeholder="ابحث في المنيو..." 
+                    value={searchQuery} 
+                    onChangeText={setSearchQuery} 
+                />
+            </View>
+
             <FlatList
-                data={menuItems}
+                data={filteredItems}
                 renderItem={renderItem}
                 keyExtractor={item => item.id}
                 contentContainerStyle={styles.listContainer}
@@ -139,7 +154,11 @@ const styles = StyleSheet.create({
         ...SHADOWS.small
     },
     title: { color: COLORS.text, fontSize: SIZES.xl, ...FONTS.bold },
-    listContainer: { padding: SIZES.spacing_xl, gap: SIZES.spacing_md, paddingBottom: 100 },
+    searchSection: {
+        paddingHorizontal: SIZES.spacing_xl,
+        marginBottom: SIZES.spacing_md,
+    },
+    listContainer: { paddingHorizontal: SIZES.spacing_xl, paddingBottom: 100, gap: SIZES.spacing_md },
     menuCard: {
         backgroundColor: COLORS.surface,
         borderRadius: SIZES.radius_lg,

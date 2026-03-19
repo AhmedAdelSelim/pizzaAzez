@@ -8,23 +8,30 @@ import { Ionicons } from '@expo/vector-icons';
 import { COLORS, FONTS, SIZES, SHADOWS } from '../../theme/theme';
 import Button from '../../components/Button';
 
+import { useAuth } from '../../context/AuthContext';
+import api from '../../services/api';
+
 export default function SuggestionsScreen({ navigation }) {
+    const { token } = useAuth();
     const [suggestion, setSuggestion] = useState('');
     const [isSubmitted, setIsSubmitted] = useState(false);
     const [loading, setLoading] = useState(false);
 
-    const handleSubmit = () => {
+    const handleSubmit = async () => {
         if (!suggestion.trim()) return;
 
         setLoading(true);
-        // Simulate API call
-        setTimeout(() => {
-            setLoading(false);
+        try {
+            await api.submitSuggestion(suggestion, token);
             setIsSubmitted(true);
             setTimeout(() => {
                 navigation.goBack();
             }, 2500);
-        }, 1500);
+        } catch (error) {
+            alert(error.message);
+        } finally {
+            setLoading(false);
+        }
     };
 
     if (isSubmitted) {

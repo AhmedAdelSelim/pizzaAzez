@@ -41,6 +41,9 @@ import AdminCategoriesScreen from '../screens/admin/AdminCategoriesScreen';
 import AdminCouponsScreen from '../screens/admin/AdminCouponsScreen';
 import AdminDeliveryZonesScreen from '../screens/admin/AdminDeliveryZonesScreen';
 import AdminOrderStatsScreen from '../screens/admin/AdminOrderStatsScreen';
+import AdminSuggestionsScreen from '../screens/admin/AdminSuggestionsScreen';
+import AdminActiveUsersScreen from '../screens/admin/AdminActiveUsersScreen';
+import AdminVipRequestsScreen from '../screens/admin/AdminVipRequestsScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -150,15 +153,20 @@ function HomeTabs() {
     );
 }
 
+function AuthStack() {
+    return (
+        <Stack.Navigator screenOptions={{ headerShown: false }}>
+            <Stack.Screen name="Login" component={LoginScreen} />
+            <Stack.Screen name="Register" component={RegisterScreen} />
+        </Stack.Navigator>
+    );
+}
+
 function MainStack() {
     return (
         <Stack.Navigator screenOptions={{ headerShown: false }}>
             <Stack.Screen name="HomeTabs" component={HomeTabs} />
             
-            {/* Auth Screens - Now part of MainStack for guest access */}
-            <Stack.Screen name="Login" component={LoginScreen} />
-            <Stack.Screen name="Register" component={RegisterScreen} />
-
             <Stack.Screen
                 name="StoryView"
                 component={StoryViewScreen}
@@ -176,19 +184,6 @@ function MainStack() {
             <Stack.Screen name="About" component={AboutScreen} />
             <Stack.Screen name="Orders" component={OrdersScreen} />
             <Stack.Screen name="EditProfile" component={EditProfileScreen} />
-
-            {/* Admin Screens */}
-            <Stack.Screen name="AdminDashboard" component={AdminDashboardScreen} />
-            <Stack.Screen name="AdminOrders" component={AdminOrdersScreen} />
-            <Stack.Screen name="AdminMenu" component={AdminMenuScreen} />
-            <Stack.Screen name="AdminMenuForm" component={AdminMenuFormScreen} />
-            <Stack.Screen name="AdminStories" component={AdminStoriesScreen} />
-            <Stack.Screen name="AdminStoryForm" component={AdminStoryFormScreen} />
-            <Stack.Screen name="AdminUsers" component={AdminUsersScreen} />
-            <Stack.Screen name="AdminCategories" component={AdminCategoriesScreen} />
-            <Stack.Screen name="AdminCoupons" component={AdminCouponsScreen} />
-            <Stack.Screen name="AdminDeliveryZones" component={AdminDeliveryZonesScreen} />
-            <Stack.Screen name="AdminOrderStats" component={AdminOrderStatsScreen} />
         </Stack.Navigator>
     );
 }
@@ -207,6 +202,9 @@ function AdminStack() {
             <Stack.Screen name="AdminCoupons" component={AdminCouponsScreen} />
             <Stack.Screen name="AdminDeliveryZones" component={AdminDeliveryZonesScreen} />
             <Stack.Screen name="AdminOrderStats" component={AdminOrderStatsScreen} />
+            <Stack.Screen name="AdminSuggestions" component={AdminSuggestionsScreen} />
+            <Stack.Screen name="AdminActiveUsers" component={AdminActiveUsersScreen} />
+            <Stack.Screen name="AdminVipRequests" component={AdminVipRequestsScreen} />
         </Stack.Navigator>
     );
 }
@@ -229,7 +227,13 @@ function AppNavigator() {
 
     return (
         <NavigationContainer ref={navigationRef}>
-            {user?.role === 'admin' ? <AdminStack /> : <MainStack />}
+            {!token ? (
+                <AuthStack />
+            ) : user?.role === 'admin' ? (
+                <AdminStack />
+            ) : (
+                <MainStack />
+            )}
         </NavigationContainer>
     );
 }

@@ -17,11 +17,11 @@ const MENU_ITEMS_LIST = [
 ];
 
 export default function ProfileScreen({ navigation }) {
-    const { user, logout, ensureAuthenticated, token } = useAuth();
+    const { user, logout, ensureAuthenticated, token, refreshProfile } = useAuth();
 
     React.useEffect(() => {
         ensureAuthenticated();
-    }, [token]);
+    }, []);
 
     const handleLogout = () => {
         Alert.alert(
@@ -60,9 +60,35 @@ export default function ProfileScreen({ navigation }) {
                     <View style={styles.userInfo}>
                         <Text style={styles.userName}>{user?.name || 'المستخدم'}</Text>
                         <Text style={styles.userPhone}>{user?.phone || 'بدون رقم هاتف'}</Text>
-                    </View>
-                    <View style={[styles.badge, { ...SHADOWS.glow(COLORS.primary) }]}>
-                        <Text style={styles.badgeText}>VIP</Text>
+                        
+                        {/* VIP Status/Request Button */}
+                        <View style={styles.vipContainer}>
+                            {user?.vip_status === 'vip' ? (
+                                <View style={[styles.badge, styles.vipBadge]}>
+                                    <Text style={styles.badgeText}>عضو VIP 👑</Text>
+                                </View>
+                            ) : user?.vip_status === 'pending' ? (
+                                <View style={[styles.badge, styles.pendingBadge]}>
+                                    <Text style={styles.badgeText}>الطلب قيد المراجعة</Text>
+                                </View>
+                            ) : (
+                                <TouchableOpacity 
+                                    style={styles.vipRequestButton}
+                                    onPress={async () => {
+                                        try {
+                                            await api.requestVip(token);
+                                            await refreshProfile();
+                                            Alert.alert('تم الإرسال', 'تم إرسال طلب الانضمام للـ VIP بنجاح');
+                                        } catch (error) {
+                                            Alert.alert('خطأ', error.message);
+                                        }
+                                    }}
+                                >
+                                    <Ionicons name="star" size={14} color={COLORS.white} />
+                                    <Text style={styles.vipRequestText}>انضم للـ VIP</Text>
+                                </TouchableOpacity>
+                            )}
+                        </View>
                     </View>
                 </View>
 
@@ -189,6 +215,31 @@ const styles = StyleSheet.create({
     badgeText: {
         color: COLORS.white,
         fontSize: SIZES.xs,
+        ...FONTS.bold,
+    },
+    vipContainer: {
+        marginTop: 8,
+        alignItems: 'flex-end',
+    },
+    vipBadge: {
+        backgroundColor: '#FFD700', // Gold
+        ...SHADOWS.glow('#FFD700'),
+    },
+    pendingBadge: {
+        backgroundColor: COLORS.textMuted,
+    },
+    vipRequestButton: {
+        flexDirection: 'row',
+        backgroundColor: COLORS.primary,
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 12,
+        alignItems: 'center',
+        gap: 6,
+    },
+    vipRequestText: {
+        color: COLORS.white,
+        fontSize: 12,
         ...FONTS.bold,
     },
     menuCard: {

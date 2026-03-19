@@ -5,7 +5,9 @@ const {
     profileController,
     miscController,
     couponController,
-    adminController
+    adminController,
+    suggestionController,
+    vipController
 } = require('../controllers');
 const { userRepository } = require('../repositories');
 
@@ -44,6 +46,12 @@ async function routes(fastify, options) {
         // Coupons
         protectedFastify.post('/api/coupons/validate', couponController.validateCoupon);
 
+        // Suggestions
+        protectedFastify.post('/api/suggestions', suggestionController.createSuggestion);
+
+        // VIP Request
+        protectedFastify.post('/api/vip/request', vipController.requestVip);
+
         // Admin Routes
         protectedFastify.register(async function (adminFastify, opts) {
             adminFastify.addHook('onRequest', async (request, reply) => {
@@ -57,6 +65,7 @@ async function routes(fastify, options) {
                 }
             });
 
+            adminFastify.get('/api/admin/suggestions', suggestionController.getAdminSuggestions);
             adminFastify.get('/api/admin/orders', adminController.getOrders);
             adminFastify.put('/api/admin/orders/:id/status', adminController.updateOrderStatus);
             adminFastify.get('/api/admin/menu', adminController.getMenuItems);
@@ -86,6 +95,10 @@ async function routes(fastify, options) {
 
             adminFastify.get('/api/admin/stats', adminController.getStats);
             adminFastify.get('/api/admin/stats/daily', adminController.getDailyStats);
+
+            // VIP Requests
+            adminFastify.get('/api/admin/vip-requests', vipController.getAdminVipRequests);
+            adminFastify.post('/api/admin/vip-requests/handle', vipController.handleVipRequest);
         });
     });
 }

@@ -108,8 +108,7 @@ export function AuthProvider({ children }) {
             if (result.user.role === 'admin') {
                 handlePushRegistration(result.user, result.token);
             } else {
-                // Regular user needs manual navigation because they stay in MainStack
-                navigate('HomeTabs');
+                console.log('AuthContext: Regular user logged in');
             }
             
             return result;
@@ -131,7 +130,6 @@ export function AuthProvider({ children }) {
 
             await AsyncStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(result));
             dispatch({ type: 'LOGIN_SUCCESS', payload: result });
-            navigate('HomeTabs');
             return result;
         } catch (error) {
             dispatch({ type: 'SET_ERROR', payload: error.message });
@@ -168,6 +166,21 @@ export function AuthProvider({ children }) {
         return true;
     };
 
+    const refreshProfile = async () => {
+        if (!state.token) return;
+        try {
+            const updatedUser = await api.getProfile(state.token);
+            await AsyncStorage.setItem(
+                AUTH_STORAGE_KEY,
+                JSON.stringify({ user: updatedUser, token: state.token })
+            );
+            dispatch({ type: 'RESTORE_TOKEN', payload: { user: updatedUser, token: state.token } });
+            return updatedUser;
+        } catch (error) {
+            console.error('Refresh Profile Error:', error);
+        }
+    };
+
     return (
         <AuthContext.Provider
             value={{
@@ -177,6 +190,7 @@ export function AuthProvider({ children }) {
                 logout,
                 updateProfile,
                 ensureAuthenticated,
+                refreshProfile,
             }}
         >
             {children}

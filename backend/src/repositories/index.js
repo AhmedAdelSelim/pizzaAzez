@@ -16,4 +16,5 @@ module.exports = {
     deliveryZoneRepository,
     storyRepository,
     couponRepository,
+    suggestionRepository: require('./suggestionRepository'),
 };

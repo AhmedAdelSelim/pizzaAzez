@@ -99,4 +99,6 @@ module.exports = {
     miscController,
     couponController,
     adminController,
+    suggestionController: require('./suggestionController'),
+    vipController: require('./vipController')
 };

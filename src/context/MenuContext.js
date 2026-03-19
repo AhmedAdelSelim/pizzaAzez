@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useReducer, useEffect } from 'react';
 import api from '../services/api';
+import { searchFilter } from '../utils/searchUtils';
 
 const MenuContext = createContext();
 
@@ -69,13 +70,7 @@ export function MenuProvider({ children }) {
     };
 
     const searchItems = (query) => {
-        if (!query) return state.menuItems;
-        const lower = query.toLowerCase();
-        return state.menuItems.filter(
-            item =>
-                item.name.toLowerCase().includes(lower) ||
-                item.description.toLowerCase().includes(lower)
-        );
+        return searchFilter(state.menuItems, query, ['name', 'description']);
     };
 
     return (

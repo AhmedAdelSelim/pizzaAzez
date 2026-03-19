@@ -125,9 +125,27 @@ export default function AdminDashboardScreen({ navigation }) {
                     screen="AdminOrders" 
                 />
                 <MenuCard 
+                    title="شكاوي واقتراحات" 
+                    subtitle="متابعة آراء واقتراحات العملاء" 
+                    icon="chatbubbles-outline" 
+                    screen="AdminSuggestions" 
+                />
+                <MenuCard 
+                    title="طلبات الـ VIP" 
+                    subtitle="مراجعة وقبول طلبات العضوية المميزة" 
+                    icon="star-outline" 
+                    screen="AdminVipRequests" 
+                />
+                <MenuCard 
+                    title="العملاء الأكثر نشاطاً" 
+                    subtitle="عرض وترتيب العملاء حسب عدد الطلبات" 
+                    icon="people-outline" 
+                    screen="AdminActiveUsers" 
+                />
+                <MenuCard 
                     title="إدارة العملاء" 
                     subtitle="إيقاف وتفعيل حسابات المستخدمين" 
-                    icon="people-outline" 
+                    icon="people-circle-outline" 
                     screen="AdminUsers" 
                 />
                 <MenuCard 
@@ -234,5 +252,37 @@ const styles = StyleSheet.create({
     },
     cardTextContainer: { flex: 1, marginHorizontal: 16 },
     cardTitle: { color: COLORS.text, fontSize: SIZES.md, ...FONTS.bold, textAlign: 'right', marginBottom: 4 },
-    cardSubtitle: { color: COLORS.textMuted, fontSize: SIZES.xs, ...FONTS.regular, textAlign: 'right' }
+    cardSubtitle: { color: COLORS.textMuted, fontSize: SIZES.xs, ...FONTS.regular, textAlign: 'right' },
+    activeUsersSection: { marginTop: SIZES.spacing_xl },
+    activeUsersContainer: {
+        backgroundColor: COLORS.surface,
+        borderRadius: SIZES.radius_xl,
+        padding: SIZES.spacing_md,
+        ...SHADOWS.small
+    },
+    activeUserRow: {
+        flexDirection: 'row-reverse',
+        alignItems: 'center',
+        paddingVertical: 12,
+        borderBottomWidth: 1,
+        borderBottomColor: COLORS.border,
+    },
+    activeUserBadge: {
+        width: 30, height: 30,
+        borderRadius: 15,
+        backgroundColor: COLORS.primary,
+        alignItems: 'center', justifyContent: 'center',
+        marginLeft: 12
+    },
+    activeUserBadgeText: { color: COLORS.white, fontSize: SIZES.xs, ...FONTS.bold },
+    activeUserInfo: { flex: 1, alignItems: 'flex-end' },
+    activeUserName: { color: COLORS.text, fontSize: SIZES.sm, ...FONTS.bold },
+    activeUserPhone: { color: COLORS.textMuted, fontSize: 10, ...FONTS.regular },
+    orderCountBadge: {
+        backgroundColor: 'rgba(232,93,44,0.1)',
+        paddingHorizontal: 12,
+        paddingVertical: 4,
+        borderRadius: 12
+    },
+    orderCountText: { color: COLORS.primary, fontSize: 10, ...FONTS.bold }
 });
