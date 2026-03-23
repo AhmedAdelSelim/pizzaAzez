@@ -49,6 +49,9 @@ async function routes(fastify, options) {
         // Coupons
         protectedFastify.post('/api/coupons/validate', couponController.validateCoupon);
 
+        // Stories (VIP + Admin)
+        protectedFastify.post('/api/stories', miscController.createStory);
+
         // Suggestions
         protectedFastify.post('/api/suggestions', suggestionController.createSuggestion);
 

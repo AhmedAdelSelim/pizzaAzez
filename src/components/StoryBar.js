@@ -2,10 +2,15 @@ import React, { useState, useEffect } from 'react';
 import {
     View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, ActivityIndicator
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 import { COLORS, FONTS, SIZES, SHADOWS } from '../theme/theme';
+import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
 
-export default function StoryBar({ onStoryPress }) {
+export default function StoryBar({ onStoryPress, onAddStory }) {
+    const { user } = useAuth();
+    const canAddStory = user?.vip_status === 'vip' || user?.role === 'admin';
     const [stories, setStories] = useState([]);
     const [loading, setLoading] = useState(true);
 
@@ -43,6 +48,23 @@ export default function StoryBar({ onStoryPress }) {
                 showsHorizontalScrollIndicator={false}
                 contentContainerStyle={styles.scrollContent}
             >
+                {/* Add Story button — VIP & admin only */}
+                {canAddStory && (
+                    <TouchableOpacity
+                        style={styles.storyContainer}
+                        onPress={onAddStory}
+                        activeOpacity={0.8}
+                    >
+                        <LinearGradient
+                            colors={[COLORS.primary, COLORS.primaryDark]}
+                            style={styles.addStoryWrapper}
+                        >
+                            <Ionicons name="add" size={28} color={COLORS.white} />
+                        </LinearGradient>
+                        <Text style={styles.storyTitle}>قصتي</Text>
+                    </TouchableOpacity>
+                )}
+
                 {stories.map((story) => (
                     <TouchableOpacity
                         key={story.id}
@@ -89,6 +111,13 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         marginLeft: 16,
         width: 75,
+    },
+    addStoryWrapper: {
+        width: 70,
+        height: 70,
+        borderRadius: 35,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
     imageWrapper: {
         width: 70,

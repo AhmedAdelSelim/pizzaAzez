@@ -131,7 +131,10 @@ export default function HomeScreen({ navigation }) {
                 </View>
 
                 {/* Stories */}
-                <StoryBar onStoryPress={(story) => navigation.navigate('StoryView', { storyId: story.id })} />
+                <StoryBar
+                    onStoryPress={(story) => navigation.navigate('StoryView', { storyId: story.id })}
+                    onAddStory={() => navigation.navigate('CreateStory')}
+                />
 
                 {/* AI Recommendations */}
                 <CraveRecommendations onPress={() => navigation.navigate('MenuTab')} />

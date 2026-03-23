@@ -19,6 +19,7 @@ import MenuScreen from '../screens/menu/MenuScreen';
 import CategoryScreen from '../screens/menu/CategoryScreen';
 import FoodDetailScreen from '../screens/menu/FoodDetailScreen';
 import StoryViewScreen from '../screens/home/StoryViewScreen';
+import CreateStoryScreen from '../screens/home/CreateStoryScreen';
 import OffersScreen from '../screens/home/OffersScreen';
 import CartScreen from '../screens/cart/CartScreen';
 import CheckoutScreen from '../screens/cart/CheckoutScreen';
@@ -170,10 +171,12 @@ function MainStack() {
             <Stack.Screen
                 name="StoryView"
                 component={StoryViewScreen}
-                options={{
-                    presentation: 'fullScreenModal',
-                    animation: 'fade'
-                }}
+                options={{ presentation: 'fullScreenModal', animation: 'fade' }}
+            />
+            <Stack.Screen
+                name="CreateStory"
+                component={CreateStoryScreen}
+                options={{ presentation: 'fullScreenModal', animation: 'slide_from_bottom' }}
             />
             <Stack.Screen name="Category" component={CategoryScreen} />
             <Stack.Screen name="FoodDetail" component={FoodDetailScreen} />

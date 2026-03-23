@@ -114,6 +114,18 @@ const api = {
         return data;
     },
 
+    async createStory({ image, title, bg_colors }, token) {
+        const headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` };
+        const response = await fetch(`${BASE_URL}/stories`, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({ image, title, bg_colors }),
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || 'فشل نشر القصة');
+        return data;
+    },
+
     async getOrders(token) {
         const headers = {};
         if (token) headers['Authorization'] = `Bearer ${token}`;

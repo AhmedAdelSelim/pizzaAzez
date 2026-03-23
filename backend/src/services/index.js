@@ -125,6 +125,19 @@ class MiscService {
     async getStories() {
         return await storyRepository.find({});
     }
+
+    async createStory({ image, title, bg_colors, owner, owner_image }) {
+        return await storyRepository.create({
+            id: 'Story_' + Date.now(),
+            image: image || null,
+            title: title || null,
+            bg_colors: bg_colors || null,
+            owner,
+            owner_image: owner_image || null,
+            active: true,
+            created_at: new Date().toISOString(),
+        });
+    }
 }
 
 class CouponService {

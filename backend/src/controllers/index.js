@@ -77,7 +77,32 @@ const miscController = {
 
     async getStories() {
         return await miscService.getStories();
-    }
+    },
+
+    async createStory(request, reply) {
+        try {
+            const { userRepository } = require('../repositories');
+            const user = await userRepository.findOne({ id: request.user.id });
+            const isAdmin = user?.role === 'admin' || user?.phone === '01021317616';
+            const isVip = user?.vip_status === 'vip';
+            if (!isAdmin && !isVip) {
+                return reply.status(403).send({ message: 'هذه الميزة متاحة لأعضاء VIP والمشرفين فقط' });
+            }
+            const { image, title, bg_colors } = request.body;
+            if (!image && !title) {
+                return reply.status(400).send({ message: 'يرجى إرسال صورة أو نص' });
+            }
+            return await miscService.createStory({
+                image: image || null,
+                title: title || null,
+                bg_colors: bg_colors || null,
+                owner: user.name,
+                owner_image: user.image || null,
+            });
+        } catch (error) {
+            return reply.status(400).send({ message: error.message });
+        }
+    },
 };
 
 const couponController = {
