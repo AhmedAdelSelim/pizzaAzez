@@ -19,39 +19,44 @@ export default function CartItem({ item, index, onUpdateQuantity, onRemove }) {
             <View style={styles.info}>
                 <Text style={styles.name} numberOfLines={1}>{item.name}</Text>
                 {item.selectedSize && (
-                    <Text style={styles.size}>الحجم: {typeof item.selectedSize === 'object' ? item.selectedSize.name : item.selectedSize}</Text>
+                    <Text style={styles.size}>
+                        الحجم: {typeof item.selectedSize === 'object' ? item.selectedSize.name : item.selectedSize}
+                    </Text>
+                )}
+                {item.selectedExtras?.length > 0 && (
+                    <Text style={styles.extras} numberOfLines={1}>
+                        + {item.selectedExtras.join('، ')}
+                    </Text>
                 )}
                 <Text style={styles.price}>{item.price * item.quantity} ج.م</Text>
             </View>
 
             <View style={styles.controls}>
-                <View style={styles.quantityRow}>
-                    <TouchableOpacity
-                        onPress={() => {
-                            if (item.quantity <= 1) {
-                                onRemove?.(item.id, index);
-                            } else {
-                                onUpdateQuantity?.(index, item.quantity - 1);
-                            }
-                        }}
-                        style={styles.qtyButton}
-                    >
-                        <Ionicons
-                            name={item.quantity <= 1 ? 'trash-outline' : 'remove'}
-                            size={16}
-                            color={item.quantity <= 1 ? COLORS.error : COLORS.white}
-                        />
-                    </TouchableOpacity>
+                <TouchableOpacity
+                    onPress={() => {
+                        if (item.quantity <= 1) {
+                            onRemove?.(item.id, index);
+                        } else {
+                            onUpdateQuantity?.(index, item.quantity - 1);
+                        }
+                    }}
+                    style={[styles.qtyButton, item.quantity <= 1 && styles.qtyButtonDelete]}
+                >
+                    <Ionicons
+                        name={item.quantity <= 1 ? 'trash-outline' : 'remove'}
+                        size={15}
+                        color={item.quantity <= 1 ? COLORS.error : COLORS.text}
+                    />
+                </TouchableOpacity>
 
-                    <Text style={styles.quantity}>{item.quantity}</Text>
+                <Text style={styles.quantity}>{item.quantity}</Text>
 
-                    <TouchableOpacity
-                        onPress={() => onUpdateQuantity?.(index, item.quantity + 1)}
-                        style={[styles.qtyButton, styles.qtyButtonAdd]}
-                    >
-                        <Ionicons name="add" size={16} color={COLORS.white} />
-                    </TouchableOpacity>
-                </View>
+                <TouchableOpacity
+                    onPress={() => onUpdateQuantity?.(index, item.quantity + 1)}
+                    style={[styles.qtyButton, styles.qtyButtonAdd]}
+                >
+                    <Ionicons name="add" size={15} color={COLORS.white} />
+                </TouchableOpacity>
             </View>
         </View>
     );
@@ -62,27 +67,29 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: COLORS.surface,
-        borderRadius: SIZES.radius_lg,
+        borderRadius: SIZES.radius_xl,
         padding: SIZES.spacing_md,
         marginBottom: SIZES.spacing_md,
         ...SHADOWS.small,
+        borderWidth: 1,
+        borderColor: COLORS.border,
     },
     imageBox: {
-        width: 60,
-        height: 60,
-        borderRadius: SIZES.radius_md,
+        width: 72,
+        height: 72,
+        borderRadius: SIZES.radius_lg,
         backgroundColor: COLORS.surfaceLight,
         alignItems: 'center',
         justifyContent: 'center',
         marginRight: SIZES.spacing_md,
+        overflow: 'hidden',
     },
     emoji: {
-        fontSize: 30,
+        fontSize: 34,
     },
     itemImage: {
         width: '100%',
         height: '100%',
-        borderRadius: SIZES.radius_md,
         resizeMode: 'cover',
     },
     info: {
@@ -92,32 +99,38 @@ const styles = StyleSheet.create({
     name: {
         color: COLORS.text,
         fontSize: SIZES.md,
-        ...FONTS.semiBold,
-        marginBottom: 2,
+        ...FONTS.bold,
+        marginBottom: 3,
+        textAlign: 'right',
     },
     size: {
         color: COLORS.textMuted,
         fontSize: SIZES.xs,
         ...FONTS.regular,
+        marginBottom: 2,
+        textAlign: 'right',
+    },
+    extras: {
+        color: COLORS.accent,
+        fontSize: SIZES.xs,
+        ...FONTS.regular,
         marginBottom: 4,
+        textAlign: 'right',
     },
     price: {
         color: COLORS.primary,
-        fontSize: SIZES.base,
-        ...FONTS.bold,
+        fontSize: SIZES.md,
+        ...FONTS.extraBold,
     },
     controls: {
-        alignItems: 'center',
-    },
-    quantityRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 12,
+        gap: 10,
     },
     qtyButton: {
-        width: 30,
-        height: 30,
-        borderRadius: 15,
+        width: 32,
+        height: 32,
+        borderRadius: 16,
         backgroundColor: COLORS.surfaceLight,
         alignItems: 'center',
         justifyContent: 'center',
@@ -127,6 +140,10 @@ const styles = StyleSheet.create({
     qtyButtonAdd: {
         backgroundColor: COLORS.primary,
         borderColor: COLORS.primary,
+    },
+    qtyButtonDelete: {
+        borderColor: COLORS.error + '50',
+        backgroundColor: COLORS.error + '15',
     },
     quantity: {
         color: COLORS.text,

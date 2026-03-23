@@ -1,45 +1,74 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
-    View, Text, StyleSheet, ScrollView, TouchableOpacity, StatusBar, Image,
+    View, Text, StyleSheet, ScrollView, TouchableOpacity, StatusBar, Image, Animated,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, FONTS, SIZES, SHADOWS } from '../../theme/theme';
 import { useCart } from '../../context/CartContext';
 import Button from '../../components/Button';
 import ReviewItem from '../../components/ReviewItem';
 
+const COMBO_OPTIONS = [
+    { id: 'drink', label: 'مشروب غازي', price: 15, emoji: '🥤' },
+    { id: 'fries', label: 'بطاطس مقلية', price: 20, emoji: '🍟' },
+    { id: 'coleslaw', label: 'كولسلو', price: 12, emoji: '🥗' },
+    { id: 'dessert', label: 'كيكة الشوكولاتة', price: 25, emoji: '🍰' },
+];
+
 export default function FoodDetailScreen({ navigation, route }) {
     const { item } = route.params;
     const { addItem } = useCart();
     const [selectedSize, setSelectedSize] = useState(null);
     const [selectedExtras, setSelectedExtras] = useState([]);
+    const [selectedCombos, setSelectedCombos] = useState([]);
     const [quantity, setQuantity] = useState(1);
     const [isAdded, setIsAdded] = useState(false);
 
-    const emoji = item.categoryIcon || ({ '1': '🧀', '2': '🍗', '3': '🥩', '4': '🌯', '5': '🔥', '6': '🍕', '7': '🥧', '8': '🍫', '9': '🥟', '10': '🍟' })[item.categoryId] || '🍕';
+    const qtyScaleAnim = useRef(new Animated.Value(1)).current;
+    const addBtnScaleAnim = useRef(new Animated.Value(1)).current;
 
+    const emoji = item.categoryIcon || ({ '1': '🧀', '2': '🍗', '3': '🥩', '4': '🌯', '5': '🔥', '6': '🍕', '7': '🥧', '8': '🍫', '9': '🥟', '10': '🍟' })[item.categoryId] || '🍕';
     const currentPrice = selectedSize?.price || (item.sizes && item.sizes.length > 0 ? null : item.price);
+    const comboTotal = selectedCombos.reduce((sum, id) => {
+        const c = COMBO_OPTIONS.find(o => o.id === id);
+        return sum + (c?.price || 0);
+    }, 0);
+
+    const toggleCombo = (id) => {
+        setSelectedCombos(prev => prev.includes(id) ? prev.filter(c => c !== id) : [...prev, id]);
+    };
 
     const toggleExtra = (extra) => {
         setSelectedExtras(prev =>
-            prev.includes(extra)
-                ? prev.filter(e => e !== extra)
-                : [...prev, extra]
+            prev.includes(extra) ? prev.filter(e => e !== extra) : [...prev, extra]
         );
     };
 
-    const handleAddToCart = () => {
-        if (item.sizes && item.sizes.length > 0 && !selectedSize) {
-            return;
-        }
-        addItem({
-            ...item,
-            price: currentPrice,
-            quantity,
-            selectedSize: selectedSize?.name || null,
-            selectedExtras,
-        });
+    const animateQty = () => {
+        Animated.sequence([
+            Animated.timing(qtyScaleAnim, { toValue: 1.3, duration: 80, useNativeDriver: true }),
+            Animated.spring(qtyScaleAnim, { toValue: 1, friction: 4, useNativeDriver: true }),
+        ]).start();
+    };
 
+    const handleQuantityChange = (delta) => {
+        setQuantity(q => Math.max(1, q + delta));
+        animateQty();
+    };
+
+    const handleAddToCart = () => {
+        if (item.sizes && item.sizes.length > 0 && !selectedSize) return;
+        Animated.sequence([
+            Animated.timing(addBtnScaleAnim, { toValue: 0.95, duration: 80, useNativeDriver: true }),
+            Animated.spring(addBtnScaleAnim, { toValue: 1, friction: 4, useNativeDriver: true }),
+        ]).start();
+        addItem({ ...item, price: currentPrice, quantity, selectedSize: selectedSize?.name || null, selectedExtras });
+        // Add combo items separately
+        selectedCombos.forEach(id => {
+            const combo = COMBO_OPTIONS.find(o => o.id === id);
+            if (combo) addItem({ id: `combo-${id}`, name: combo.label, price: combo.price, quantity: 1, selectedSize: null, selectedExtras: [] });
+        });
         setIsAdded(true);
         setTimeout(() => setIsAdded(false), 2000);
     };
@@ -52,15 +81,16 @@ export default function FoodDetailScreen({ navigation, route }) {
                 {item.image ? (
                     <Image source={{ uri: item.image }} style={styles.productImage} />
                 ) : (
-                    <View>
+                    <View style={styles.emojiContainer}>
                         <Text style={styles.emoji}>{emoji}</Text>
                     </View>
                 )}
-                <TouchableOpacity
-                    onPress={() => navigation.goBack()}
-                    style={styles.backButton}
-                >
-                    <Ionicons name="arrow-forward" size={24} color={COLORS.text} />
+                <LinearGradient
+                    colors={['transparent', COLORS.background]}
+                    style={styles.imageGradient}
+                />
+                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+                    <Ionicons name="arrow-forward" size={22} color={COLORS.text} />
                 </TouchableOpacity>
                 {item.isSpecial && (
                     <View style={styles.specialBadge}>
@@ -74,92 +104,137 @@ export default function FoodDetailScreen({ navigation, route }) {
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={styles.scrollContent}
             >
+                {/* Title & Price */}
                 <View style={styles.titleRow}>
                     <View style={styles.titleInfo}>
-                        <Text style={styles.name}>
-                            {item.name}
-                        </Text>
+                        <Text style={styles.name}>{item.name}</Text>
                         <View style={styles.ratingRow}>
-                            <Ionicons name="star" size={16} color={COLORS.star} />
+                            <Ionicons name="star" size={14} color={COLORS.star} />
                             <Text style={styles.rating}>{item.rating}</Text>
                             <Text style={styles.reviews}>
                                 ({Array.isArray(item.reviews) ? item.reviews.length : (item.reviews || 0)} تقييم)
                             </Text>
                         </View>
                     </View>
-                    <Text style={styles.price}>{currentPrice ? `${currentPrice} ج.م` : 'اختر الحجم'}</Text>
+                    <View style={styles.priceBox}>
+                        <Text style={styles.price}>
+                            {currentPrice ? `${currentPrice} ج.م` : 'اختر'}
+                        </Text>
+                    </View>
                 </View>
 
-                <View>
-                    <Text style={styles.description}>{item.description}</Text>
-                </View>
+                <Text style={styles.description}>{item.description}</Text>
 
+                {/* Size Selector */}
                 {item.sizes?.length > 0 && (
                     <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>الحجم</Text>
-                        <View style={styles.optionsRow}>
-                            {item.sizes.map((sizeObj) => (
-                                <TouchableOpacity
-                                    key={sizeObj.name}
-                                    onPress={() => setSelectedSize(sizeObj)}
-                                    style={[
-                                        styles.optionChip,
-                                        selectedSize?.name === sizeObj.name && styles.optionChipSelected,
-                                    ]}
-                                >
-                                    <Text
-                                        style={[
-                                            styles.optionText,
-                                            selectedSize?.name === sizeObj.name && styles.optionTextSelected,
-                                        ]}
+                        <Text style={styles.sectionTitle}>اختر الحجم</Text>
+                        <View style={styles.sizeGrid}>
+                            {item.sizes.map((sizeObj) => {
+                                const isSelected = selectedSize?.name === sizeObj.name;
+                                return (
+                                    <TouchableOpacity
+                                        key={sizeObj.name}
+                                        onPress={() => setSelectedSize(sizeObj)}
+                                        style={[styles.sizeCard, isSelected && styles.sizeCardSelected]}
                                     >
-                                        {sizeObj.name} - {sizeObj.price} ج.م
-                                    </Text>
-                                </TouchableOpacity>
-                            ))}
+                                        <Text style={[styles.sizeName, isSelected && styles.sizeNameSelected]}>
+                                            {sizeObj.name}
+                                        </Text>
+                                        <Text style={[styles.sizePrice, isSelected && styles.sizePriceSelected]}>
+                                            {sizeObj.price} ج.م
+                                        </Text>
+                                        {isSelected && (
+                                            <View style={styles.sizeCheck}>
+                                                <Ionicons name="checkmark" size={12} color={COLORS.white} />
+                                            </View>
+                                        )}
+                                    </TouchableOpacity>
+                                );
+                            })}
                         </View>
                     </View>
                 )}
 
+                {/* Extras */}
                 {item.extras?.length > 0 && (
                     <View style={styles.section}>
                         <Text style={styles.sectionTitle}>إضافات</Text>
-                        <View style={styles.optionsRow}>
-                            {item.extras.map((extra) => (
-                                <TouchableOpacity
-                                    key={extra}
-                                    onPress={() => toggleExtra(extra)}
-                                    style={[
-                                        styles.optionChip,
-                                        selectedExtras.includes(extra) && styles.extraChipSelected,
-                                    ]}
-                                >
-                                    <Text
-                                        style={[
-                                            styles.optionText,
-                                            selectedExtras.includes(extra) && styles.extraTextSelected,
-                                        ]}
+                        <View style={styles.extrasGrid}>
+                            {item.extras.map((extra) => {
+                                const isSelected = selectedExtras.includes(extra);
+                                return (
+                                    <TouchableOpacity
+                                        key={extra}
+                                        onPress={() => toggleExtra(extra)}
+                                        style={[styles.extraChip, isSelected && styles.extraChipSelected]}
                                     >
-                                        {selectedExtras.includes(extra) ? '✓ ' : '+ '}{extra}
-                                    </Text>
-                                </TouchableOpacity>
-                            ))}
+                                        <Ionicons
+                                            name={isSelected ? 'checkmark-circle' : 'add-circle-outline'}
+                                            size={16}
+                                            color={isSelected ? COLORS.accent : COLORS.textMuted}
+                                        />
+                                        <Text style={[styles.extraText, isSelected && styles.extraTextSelected]}>
+                                            {extra}
+                                        </Text>
+                                    </TouchableOpacity>
+                                );
+                            })}
                         </View>
                     </View>
                 )}
 
+                {/* Meal Combo Upsell */}
+                <View style={styles.section}>
+                    <View style={styles.comboHeader}>
+                        <Text style={styles.sectionTitle}>أكمل وجبتك 🎯</Text>
+                        {selectedCombos.length > 0 && (
+                            <Text style={styles.comboSavings}>+{comboTotal} ج.م</Text>
+                        )}
+                    </View>
+                    <View style={styles.comboGrid}>
+                        {COMBO_OPTIONS.map((combo) => {
+                            const isSelected = selectedCombos.includes(combo.id);
+                            return (
+                                <TouchableOpacity
+                                    key={combo.id}
+                                    onPress={() => toggleCombo(combo.id)}
+                                    style={[styles.comboCard, isSelected && styles.comboCardSelected]}
+                                    activeOpacity={0.75}
+                                >
+                                    <Text style={styles.comboEmoji}>{combo.emoji}</Text>
+                                    <Text style={[styles.comboName, isSelected && styles.comboNameSelected]} numberOfLines={1}>
+                                        {combo.label}
+                                    </Text>
+                                    <Text style={[styles.comboPrice, isSelected && styles.comboPriceSelected]}>
+                                        +{combo.price} ج.م
+                                    </Text>
+                                    {isSelected && (
+                                        <View style={styles.comboCheck}>
+                                            <Ionicons name="checkmark" size={10} color={COLORS.white} />
+                                        </View>
+                                    )}
+                                </TouchableOpacity>
+                            );
+                        })}
+                    </View>
+                </View>
+
+                {/* Quantity */}
                 <View style={styles.section}>
                     <Text style={styles.sectionTitle}>الكمية</Text>
                     <View style={styles.quantityContainer}>
                         <TouchableOpacity
-                            onPress={() => setQuantity(q => Math.max(1, q - 1))}
+                            onPress={() => handleQuantityChange(-1)}
                             style={styles.qtyButton}
                         >
                             <Ionicons name="remove" size={20} color={COLORS.text} />
                         </TouchableOpacity>
-                        <Text style={styles.qtyText}>{quantity}</Text>
+                        <Animated.Text style={[styles.qtyText, { transform: [{ scale: qtyScaleAnim }] }]}>
+                            {quantity}
+                        </Animated.Text>
                         <TouchableOpacity
-                            onPress={() => setQuantity(q => q + 1)}
+                            onPress={() => handleQuantityChange(1)}
                             style={[styles.qtyButton, styles.qtyButtonAdd]}
                         >
                             <Ionicons name="add" size={20} color={COLORS.white} />
@@ -167,9 +242,10 @@ export default function FoodDetailScreen({ navigation, route }) {
                     </View>
                 </View>
 
+                {/* Reviews */}
                 {Array.isArray(item.reviews) && item.reviews.length > 0 && (
                     <View style={styles.section}>
-                        <View style={styles.sectionHeader}>
+                        <View style={styles.sectionHeaderRow}>
                             <Text style={styles.sectionTitle}>آراء العملاء</Text>
                             <View style={styles.ratingBadge}>
                                 <Ionicons name="star" size={12} color={COLORS.star} />
@@ -185,22 +261,25 @@ export default function FoodDetailScreen({ navigation, route }) {
                 <View style={{ height: 120 }} />
             </ScrollView>
 
+            {/* Bottom Bar */}
             <View style={styles.bottomBar}>
                 <View style={styles.totalArea}>
                     <Text style={styles.totalLabel}>المجموع</Text>
                     <Text style={styles.totalPrice}>
-                        {currentPrice ? `${currentPrice * quantity} ج.م` : '---'}
+                        {currentPrice ? `${currentPrice * quantity + comboTotal} ج.م` : '---'}
                     </Text>
                 </View>
-                <Button
-                    title={isAdded ? "تمت الإضافة ✅" : "أضف للسلة"}
-                    onPress={handleAddToCart}
-                    variant={isAdded ? "secondary" : "primary"}
-                    size="large"
-                    disabled={item.sizes && item.sizes.length > 0 && !selectedSize}
-                    icon={<Ionicons name={isAdded ? "checkmark-circle" : "cart-outline"} size={20} color={isAdded ? (item.sizes && item.sizes.length > 0 && !selectedSize ? COLORS.textMuted : COLORS.primary) : COLORS.white} />}
-                    style={[styles.addButton, item.sizes && item.sizes.length > 0 && !selectedSize && { opacity: 0.5 }]}
-                />
+                <Animated.View style={[styles.addButton, { transform: [{ scale: addBtnScaleAnim }] }]}>
+                    <Button
+                        title={isAdded ? 'تمت الإضافة ✅' : 'أضف للسلة'}
+                        onPress={handleAddToCart}
+                        variant={isAdded ? 'secondary' : 'primary'}
+                        size="large"
+                        disabled={item.sizes && item.sizes.length > 0 && !selectedSize}
+                        icon={<Ionicons name={isAdded ? 'checkmark-circle' : 'cart-outline'} size={20} color={isAdded ? COLORS.primary : COLORS.white} />}
+                        style={[{ opacity: item.sizes && item.sizes.length > 0 && !selectedSize ? 0.5 : 1 }]}
+                    />
+                </Animated.View>
             </View>
         </View>
     );
@@ -212,40 +291,51 @@ const styles = StyleSheet.create({
         backgroundColor: COLORS.background,
     },
     imageArea: {
-        height: 260,
+        height: 280,
+        position: 'relative',
+    },
+    emojiContainer: {
+        flex: 1,
         backgroundColor: COLORS.surfaceLight,
         alignItems: 'center',
         justifyContent: 'center',
-        position: 'relative',
     },
     emoji: {
-        fontSize: 100,
+        fontSize: 110,
     },
     productImage: {
         width: '100%',
         height: '100%',
         resizeMode: 'cover',
     },
+    imageGradient: {
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        height: 80,
+    },
     backButton: {
         position: 'absolute',
-        top: 50,
+        top: 52,
         right: 20,
-        width: 40,
-        height: 40,
-        borderRadius: 20,
+        width: 42,
+        height: 42,
+        borderRadius: 21,
         backgroundColor: COLORS.surface,
         alignItems: 'center',
         justifyContent: 'center',
-        ...SHADOWS.small,
+        ...SHADOWS.medium,
     },
     specialBadge: {
         position: 'absolute',
-        top: 55,
+        top: 57,
         left: 20,
         backgroundColor: COLORS.primary,
         borderRadius: SIZES.radius_full,
         paddingHorizontal: 14,
         paddingVertical: 6,
+        ...SHADOWS.small,
     },
     specialText: {
         color: COLORS.white,
@@ -254,7 +344,7 @@ const styles = StyleSheet.create({
     },
     content: {
         flex: 1,
-        marginTop: -20,
+        marginTop: -24,
         borderTopLeftRadius: SIZES.radius_xxl,
         borderTopRightRadius: SIZES.radius_xxl,
         backgroundColor: COLORS.background,
@@ -286,16 +376,24 @@ const styles = StyleSheet.create({
     },
     rating: {
         color: COLORS.star,
-        fontSize: SIZES.md,
+        fontSize: SIZES.sm,
         ...FONTS.semiBold,
     },
     reviews: {
         color: COLORS.textMuted,
         fontSize: SIZES.sm,
     },
+    priceBox: {
+        backgroundColor: COLORS.primary + '20',
+        borderRadius: SIZES.radius_lg,
+        paddingHorizontal: 14,
+        paddingVertical: 8,
+        borderWidth: 1,
+        borderColor: COLORS.primary + '40',
+    },
     price: {
         color: COLORS.primary,
-        fontSize: SIZES.xxl,
+        fontSize: SIZES.xl,
         ...FONTS.extraBold,
     },
     description: {
@@ -313,19 +411,19 @@ const styles = StyleSheet.create({
         color: COLORS.text,
         fontSize: SIZES.lg,
         ...FONTS.bold,
-        marginBottom: 12,
+        marginBottom: 14,
         textAlign: 'right',
     },
-    sectionHeader: {
+    sectionHeaderRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: SIZES.spacing_md,
+        marginBottom: 14,
     },
     ratingBadge: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: 'rgba(255, 193, 7, 0.1)',
+        backgroundColor: 'rgba(255,193,7,0.1)',
         paddingHorizontal: 8,
         paddingVertical: 4,
         borderRadius: 12,
@@ -336,39 +434,105 @@ const styles = StyleSheet.create({
         fontSize: 12,
         ...FONTS.bold,
     },
-    optionsRow: {
+    sizeGrid: {
         flexDirection: 'row',
         flexWrap: 'wrap',
         gap: 10,
     },
-    optionChip: {
-        paddingHorizontal: 16,
+    sizeCard: {
+        flex: 1,
+        minWidth: 90,
+        paddingVertical: 14,
+        paddingHorizontal: 12,
+        borderRadius: SIZES.radius_lg,
+        backgroundColor: COLORS.surface,
+        borderWidth: 2,
+        borderColor: COLORS.border,
+        alignItems: 'center',
+        position: 'relative',
+    },
+    sizeCardSelected: {
+        borderColor: COLORS.primary,
+        backgroundColor: 'rgba(232,93,44,0.12)',
+    },
+    sizeName: {
+        color: COLORS.textMuted,
+        fontSize: SIZES.sm,
+        ...FONTS.medium,
+        marginBottom: 4,
+    },
+    sizeNameSelected: {
+        color: COLORS.primary,
+        ...FONTS.bold,
+    },
+    sizePrice: {
+        color: COLORS.textMuted,
+        fontSize: SIZES.lg,
+        ...FONTS.extraBold,
+    },
+    sizePriceSelected: {
+        color: COLORS.primary,
+    },
+    sizeCheck: {
+        position: 'absolute',
+        top: 6,
+        left: 6,
+        width: 18,
+        height: 18,
+        borderRadius: 9,
+        backgroundColor: COLORS.primary,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    extrasGrid: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 10,
+    },
+    extraChip: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 14,
         paddingVertical: 10,
         borderRadius: SIZES.radius_full,
         backgroundColor: COLORS.surface,
         borderWidth: 1.5,
         borderColor: COLORS.border,
+        gap: 6,
     },
-    optionChipSelected: {
-        borderColor: COLORS.primary,
-        backgroundColor: 'rgba(232,93,44,0.15)',
+    extraChipSelected: {
+        borderColor: COLORS.accent,
+        backgroundColor: 'rgba(0,201,167,0.12)',
     },
-    optionText: {
+    extraText: {
         color: COLORS.textMuted,
         fontSize: SIZES.sm,
         ...FONTS.medium,
     },
-    optionTextSelected: {
-        color: COLORS.primary,
-        ...FONTS.bold,
-    },
-    extraChipSelected: {
-        borderColor: COLORS.accent,
-        backgroundColor: 'rgba(0,201,167,0.15)',
-    },
     extraTextSelected: {
         color: COLORS.accent,
         ...FONTS.bold,
+    },
+    comboHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 },
+    comboSavings: { color: COLORS.primary, fontSize: SIZES.md, ...FONTS.bold },
+    comboGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+    comboCard: {
+        width: '47%', backgroundColor: COLORS.surface, borderRadius: SIZES.radius_lg,
+        padding: 12, alignItems: 'center', borderWidth: 1.5, borderColor: COLORS.border,
+        position: 'relative',
+    },
+    comboCardSelected: {
+        borderColor: COLORS.primary, backgroundColor: 'rgba(232,93,44,0.08)',
+    },
+    comboEmoji: { fontSize: 28, marginBottom: 6 },
+    comboName: { color: COLORS.textMuted, fontSize: SIZES.sm, ...FONTS.medium, textAlign: 'center', marginBottom: 4 },
+    comboNameSelected: { color: COLORS.primary, ...FONTS.bold },
+    comboPrice: { color: COLORS.textMuted, fontSize: SIZES.sm, ...FONTS.semiBold },
+    comboPriceSelected: { color: COLORS.primary },
+    comboCheck: {
+        position: 'absolute', top: 6, left: 6,
+        width: 18, height: 18, borderRadius: 9, backgroundColor: COLORS.primary,
+        alignItems: 'center', justifyContent: 'center',
     },
     quantityContainer: {
         flexDirection: 'row',
@@ -376,24 +540,25 @@ const styles = StyleSheet.create({
         gap: 20,
     },
     qtyButton: {
-        width: 44,
-        height: 44,
-        borderRadius: 22,
+        width: 46,
+        height: 46,
+        borderRadius: 23,
         backgroundColor: COLORS.surface,
         alignItems: 'center',
         justifyContent: 'center',
-        borderWidth: 1,
+        borderWidth: 1.5,
         borderColor: COLORS.border,
     },
     qtyButtonAdd: {
         backgroundColor: COLORS.primary,
         borderColor: COLORS.primary,
+        ...SHADOWS.glow(COLORS.primary),
     },
     qtyText: {
         color: COLORS.text,
         fontSize: SIZES.xxl,
         ...FONTS.bold,
-        minWidth: 30,
+        minWidth: 36,
         textAlign: 'center',
     },
     bottomBar: {

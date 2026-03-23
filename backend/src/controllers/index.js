@@ -45,15 +45,18 @@ const menuController = {
 
 const orderController = {
     async placeOrder(request) {
-        const order = await orderService.placeOrder(request.body);
+        const loyaltyService = require('./loyaltyController') && require('../services/loyaltyService');
+        const order = await orderService.placeOrder({ ...request.body, user_id: request.user.id });
+        const points_earned = await loyaltyService.awardPoints(request.user.id, order.total).catch(() => 0);
         return {
             order,
             estimatedTime: '٣٠-٤٥ دقيقة',
+            points_earned,
         };
     },
 
-    async getOrders() {
-        return await orderService.getOrders();
+    async getOrders(request) {
+        return await orderService.getOrders(request.user.id);
     }
 };
 
@@ -100,5 +103,7 @@ module.exports = {
     couponController,
     adminController,
     suggestionController: require('./suggestionController'),
-    vipController: require('./vipController')
+    vipController: require('./vipController'),
+    loyaltyController: require('./loyaltyController'),
+    flashDealController: require('./flashDealController'),
 };

@@ -1,9 +1,7 @@
-import React from 'react';
-import { View, Text, StyleSheet, Image, Dimensions } from 'react-native';
+import React, { useRef, useEffect } from 'react';
+import { View, Text, StyleSheet, Image, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, FONTS, SIZES } from '../theme/theme';
-
-const { width } = Dimensions.get('window');
 
 const statuses = [
     { key: 'pending', label: 'تم الاستلام', icon: 'receipt-outline', color: '#9E9E9E' },
@@ -13,10 +11,42 @@ const statuses = [
     { key: 'delivered', label: 'وصلنا!', icon: 'checkmark-circle-outline', color: '#4CAF50' },
 ];
 
+function PulsingStep({ color, children }) {
+    const pulseAnim = useRef(new Animated.Value(1)).current;
+    const ringOpacity = useRef(new Animated.Value(0)).current;
+
+    useEffect(() => {
+        Animated.loop(
+            Animated.sequence([
+                Animated.parallel([
+                    Animated.timing(pulseAnim, { toValue: 1.18, duration: 700, useNativeDriver: true }),
+                    Animated.timing(ringOpacity, { toValue: 0.5, duration: 700, useNativeDriver: true }),
+                ]),
+                Animated.parallel([
+                    Animated.timing(pulseAnim, { toValue: 1, duration: 700, useNativeDriver: true }),
+                    Animated.timing(ringOpacity, { toValue: 0, duration: 700, useNativeDriver: true }),
+                ]),
+            ])
+        ).start();
+    }, []);
+
+    return (
+        <View style={styles.stepItemWrapper}>
+            <Animated.View
+                style={[
+                    styles.pulseRing,
+                    { borderColor: color, opacity: ringOpacity, transform: [{ scale: pulseAnim }] },
+                ]}
+            />
+            <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
+                {children}
+            </Animated.View>
+        </View>
+    );
+}
+
 export default function OrderJourneyTracker({ currentStatus = 'pending' }) {
     const currentIndex = statuses.findIndex(s => s.key === currentStatus);
-    
-    // Fallback to 0 if status is unknown or cancelled
     const activeIndex = currentIndex === -1 ? 0 : currentIndex;
 
     return (
@@ -26,45 +56,47 @@ export default function OrderJourneyTracker({ currentStatus = 'pending' }) {
                     const isActive = index <= activeIndex;
                     const isCurrent = index === activeIndex;
 
+                    const iconEl = (
+                        <View style={[
+                            styles.iconContainer,
+                            {
+                                borderColor: isActive ? status.color : COLORS.border,
+                                backgroundColor: isCurrent ? status.color : COLORS.surface,
+                            }
+                        ]}>
+                            {status.image ? (
+                                <Image
+                                    source={status.image}
+                                    style={[styles.statusImage, { tintColor: isCurrent ? COLORS.white : (isActive ? status.color : COLORS.textMuted) }]}
+                                />
+                            ) : (
+                                <Ionicons
+                                    name={status.icon}
+                                    size={18}
+                                    color={isCurrent ? COLORS.white : (isActive ? status.color : COLORS.textMuted)}
+                                />
+                            )}
+                        </View>
+                    );
+
                     return (
                         <React.Fragment key={status.key}>
-                            {/* Connecting Line */}
                             {index > 0 && (
                                 <View style={[
                                     styles.line,
                                     { backgroundColor: index <= activeIndex ? statuses[index].color : COLORS.border }
                                 ]} />
                             )}
-                            
-                            {/* Step Item */}
                             <View style={styles.stepItem}>
-                                <View style={[
-                                    styles.iconContainer,
-                                    { 
-                                        borderColor: isActive ? status.color : COLORS.border,
-                                        backgroundColor: isCurrent ? status.color : COLORS.surface,
-                                        transform: [{ scale: isCurrent ? 1.2 : 1 }]
-                                    }
-                                ]}>
-                                    {status.image ? (
-                                        <Image 
-                                            source={status.image} 
-                                            style={[styles.statusImage, { tintColor: isCurrent ? COLORS.white : (isActive ? status.color : COLORS.textMuted) }]} 
-                                        />
-                                    ) : (
-                                        <Ionicons 
-                                            name={status.icon} 
-                                            size={20} 
-                                            color={isCurrent ? COLORS.white : (isActive ? status.color : COLORS.textMuted)} 
-                                        />
-                                    )}
-                                </View>
+                                {isCurrent ? (
+                                    <PulsingStep color={status.color}>{iconEl}</PulsingStep>
+                                ) : (
+                                    iconEl
+                                )}
                                 <Text style={[
                                     styles.label,
-                                    { 
-                                        color: isActive ? status.color : COLORS.textMuted,
-                                        ... (isCurrent ? FONTS.bold : FONTS.regular)
-                                    }
+                                    { color: isActive ? status.color : COLORS.textMuted },
+                                    isCurrent && FONTS.bold,
                                 ]}>
                                     {status.label}
                                 </Text>
@@ -74,11 +106,12 @@ export default function OrderJourneyTracker({ currentStatus = 'pending' }) {
                 })}
             </View>
 
-            {/* Current Status Highlight */}
-            <View style={[styles.highlightCard, { backgroundColor: statuses[activeIndex].color + '15' }]}>
-                <Ionicons name="information-circle" size={20} color={statuses[activeIndex].color} />
+            <View style={[styles.highlightCard, { backgroundColor: statuses[activeIndex].color + '18' }]}>
+                <Ionicons name="radio-button-on" size={18} color={statuses[activeIndex].color} />
                 <Text style={[styles.highlightText, { color: statuses[activeIndex].color }]}>
-                    {currentStatus === 'cancelled' ? 'تم إلغاء الطلب' : `طلبك الآن في مرحلة: ${statuses[activeIndex].label}`}
+                    {currentStatus === 'cancelled'
+                        ? 'تم إلغاء الطلب'
+                        : `طلبك الآن في مرحلة: ${statuses[activeIndex].label}`}
                 </Text>
             </View>
         </View>
@@ -91,15 +124,26 @@ const styles = StyleSheet.create({
         width: '100%',
     },
     stepsContainer: {
-        flexDirection: 'row-reverse', // RTL Support
+        flexDirection: 'row-reverse',
         alignItems: 'center',
         justifyContent: 'space-between',
         paddingHorizontal: 10,
-        marginBottom: 20,
+        marginBottom: 16,
     },
     stepItem: {
         alignItems: 'center',
         zIndex: 2,
+    },
+    stepItemWrapper: {
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    pulseRing: {
+        position: 'absolute',
+        width: 52,
+        height: 52,
+        borderRadius: 26,
+        borderWidth: 2,
     },
     iconContainer: {
         width: 40,
@@ -111,8 +155,8 @@ const styles = StyleSheet.create({
         backgroundColor: COLORS.surface,
     },
     statusImage: {
-        width: 24,
-        height: 24,
+        width: 22,
+        height: 22,
         resizeMode: 'contain',
     },
     line: {
@@ -120,6 +164,7 @@ const styles = StyleSheet.create({
         height: 3,
         marginHorizontal: -5,
         zIndex: 1,
+        borderRadius: 2,
     },
     label: {
         fontSize: 10,
@@ -132,10 +177,12 @@ const styles = StyleSheet.create({
         padding: 12,
         borderRadius: SIZES.radius_md,
         gap: 10,
+        borderWidth: 1,
+        borderColor: 'transparent',
     },
     highlightText: {
         fontSize: SIZES.sm,
-        ...FONTS.medium,
+        ...FONTS.semiBold,
         textAlign: 'right',
-    }
+    },
 });

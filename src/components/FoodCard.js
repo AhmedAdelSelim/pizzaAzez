@@ -1,82 +1,85 @@
-import { View, Text, StyleSheet, TouchableOpacity, Dimensions, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { COLORS, FONTS, SIZES, SHADOWS } from '../theme/theme';
-import React from 'react';
-
-const { width } = Dimensions.get('window');
-const CARD_WIDTH = (width - 48) / 2;
+import React, { useRef } from 'react';
 
 export default function FoodCard({ item, onPress, onAddToCart }) {
+    const scaleAnim = useRef(new Animated.Value(1)).current;
+
     const handleAdd = (e) => {
         e.stopPropagation?.();
+        Animated.sequence([
+            Animated.timing(scaleAnim, { toValue: 0.72, duration: 80, useNativeDriver: true }),
+            Animated.spring(scaleAnim, { toValue: 1, friction: 3, tension: 200, useNativeDriver: true }),
+        ]).start();
         onAddToCart?.(item);
     };
 
+    const emoji = item.categoryIcon || ({ '1': '🧀', '2': '🍗', '3': '🥩', '4': '🌯', '5': '🔥', '6': '🍕', '7': '🥧', '8': '🍫', '9': '🥟', '10': '🍟' })[item.categoryId] || '🍕';
+
     return (
-        <View style={[{ padding: 5 }, styles.cardContainer]}>
-            <TouchableOpacity
-                onPress={() => onPress(item)}
-                activeOpacity={0.9}
-                style={styles.container}
-            >
-                <View style={styles.imageContainer}>
-                    {item.image ? (
-                        <Image source={{ uri: item.image }} style={styles.image} />
-                    ) : (
-                        <View style={styles.imagePlaceholder}>
-                            <Text style={styles.emoji}>
-                                {item.categoryIcon || ({ '1': '🧀', '2': '🍗', '3': '🥩', '4': '🌯', '5': '🔥', '6': '🍕', '7': '🥧', '8': '🍫', '9': '🥟', '10': '🍟' })[item.categoryId] || '🍕'}
-                            </Text>
-                        </View>
-                    )}
-                    {item.isSpecial && (
-                        <View style={styles.specialBadge}>
-                            <Text style={styles.specialText}>🔥 عرض</Text>
-                        </View>
-                    )}
-                </View>
-
-                <View style={styles.info}>
-                    <Text style={styles.name} numberOfLines={1}>{item.name}</Text>
-                    <Text style={styles.description} numberOfLines={2}>{item.description}</Text>
-
-                    <View style={styles.ratingRow}>
-                        <Ionicons name="star" size={12} color={COLORS.star} />
-                        <Text style={styles.rating}>{item.rating}</Text>
-                        <Text style={styles.reviews}>
-                            ({Array.isArray(item.reviews) ? item.reviews.length : (item.reviews || 0)})
-                        </Text>
+        <TouchableOpacity
+            onPress={() => onPress(item)}
+            activeOpacity={0.92}
+            style={styles.container}
+        >
+            <View style={styles.imageContainer}>
+                {item.image ? (
+                    <Image source={{ uri: item.image }} style={styles.image} />
+                ) : (
+                    <View style={styles.imagePlaceholder}>
+                        <Text style={styles.emoji}>{emoji}</Text>
                     </View>
+                )}
+                <LinearGradient
+                    colors={['transparent', 'rgba(26,26,46,0.65)']}
+                    style={styles.imageGradient}
+                />
+                {item.isSpecial && (
+                    <View style={styles.specialBadge}>
+                        <Text style={styles.specialText}>🔥 عرض</Text>
+                    </View>
+                )}
+            </View>
 
-                    <View style={styles.bottomRow}>
-                        <Text style={styles.price}>{item.sizes ? `من ${item.price}` : item.price} ج.م</Text>
+            <View style={styles.info}>
+                <Text style={styles.name} numberOfLines={1}>{item.name}</Text>
+                <View style={styles.ratingRow}>
+                    <Ionicons name="star" size={11} color={COLORS.star} />
+                    <Text style={styles.rating}>{item.rating}</Text>
+                    <Text style={styles.reviews}>
+                        ({Array.isArray(item.reviews) ? item.reviews.length : (item.reviews || 0)})
+                    </Text>
+                </View>
+                <View style={styles.bottomRow}>
+                    <Text style={styles.price}>{item.sizes ? `من ${item.price}` : item.price} ج.م</Text>
+                    <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
                         <TouchableOpacity
                             onPress={handleAdd}
                             style={styles.addButton}
-                            activeOpacity={0.7}
+                            activeOpacity={0.8}
                         >
-                            <Ionicons name="add" size={18} color={COLORS.white} />
+                            <Ionicons name="add" size={20} color={COLORS.white} />
                         </TouchableOpacity>
-                    </View>
+                    </Animated.View>
                 </View>
-            </TouchableOpacity>
-        </View>
+            </View>
+        </TouchableOpacity>
     );
 }
 
 const styles = StyleSheet.create({
     container: {
-        width: CARD_WIDTH,
+        width: '100%',
         backgroundColor: COLORS.surface,
-        borderRadius: SIZES.radius_lg,
+        borderRadius: SIZES.radius_xl,
         marginBottom: SIZES.spacing_base,
+        overflow: 'hidden',
         ...SHADOWS.medium,
     },
     imageContainer: {
-        height: 120,
-        borderTopLeftRadius: SIZES.radius_lg,
-        borderTopRightRadius: SIZES.radius_lg,
-        overflow: 'hidden',
+        height: 145,
         position: 'relative',
     },
     imagePlaceholder: {
@@ -86,13 +89,19 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
     },
     image: {
-        flex: 1,
         width: '100%',
         height: '100%',
         resizeMode: 'cover',
     },
+    imageGradient: {
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        height: 55,
+    },
     emoji: {
-        fontSize: 48,
+        fontSize: 52,
     },
     specialBadge: {
         position: 'absolute',
@@ -115,19 +124,13 @@ const styles = StyleSheet.create({
         color: COLORS.text,
         fontSize: SIZES.md,
         ...FONTS.bold,
-        marginBottom: 2,
-    },
-    description: {
-        color: COLORS.textMuted,
-        fontSize: SIZES.xs,
-        ...FONTS.regular,
-        marginBottom: 6,
-        lineHeight: 16,
+        marginBottom: 5,
+        textAlign: 'right',
     },
     ratingRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: 8,
+        marginBottom: 10,
         gap: 3,
     },
     rating: {
@@ -146,16 +149,16 @@ const styles = StyleSheet.create({
     },
     price: {
         color: COLORS.primary,
-        fontSize: SIZES.lg,
+        fontSize: SIZES.base,
         ...FONTS.extraBold,
     },
     addButton: {
-        width: 30,
-        height: 30,
-        borderRadius: 15,
+        width: 34,
+        height: 34,
+        borderRadius: 17,
         backgroundColor: COLORS.primary,
         alignItems: 'center',
         justifyContent: 'center',
-        ...SHADOWS.small,
+        ...SHADOWS.glow(COLORS.primary),
     },
 });

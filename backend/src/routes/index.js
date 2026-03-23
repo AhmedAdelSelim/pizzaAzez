@@ -7,7 +7,9 @@ const {
     couponController,
     adminController,
     suggestionController,
-    vipController
+    vipController,
+    loyaltyController,
+    flashDealController,
 } = require('../controllers');
 const { userRepository } = require('../repositories');
 
@@ -22,6 +24,7 @@ async function routes(fastify, options) {
     fastify.get('/api/menu/:id', menuController.getMenuItem);
     fastify.get('/api/delivery-zones', miscController.getDeliveryZones);
     fastify.get('/api/stories', miscController.getStories);
+    fastify.get('/api/flash-deals', flashDealController.getActiveDeals);
 
     // Protected Routes
     fastify.register(async function (protectedFastify, opts) {
@@ -51,6 +54,11 @@ async function routes(fastify, options) {
 
         // VIP Request
         protectedFastify.post('/api/vip/request', vipController.requestVip);
+
+        // Loyalty Points
+        protectedFastify.get('/api/loyalty', loyaltyController.getPoints);
+        protectedFastify.post('/api/loyalty/redeem', loyaltyController.redeemPoints);
+        protectedFastify.post('/api/loyalty/referral', loyaltyController.applyReferral);
 
         // Admin Routes
         protectedFastify.register(async function (adminFastify, opts) {
@@ -99,6 +107,11 @@ async function routes(fastify, options) {
             // VIP Requests
             adminFastify.get('/api/admin/vip-requests', vipController.getAdminVipRequests);
             adminFastify.post('/api/admin/vip-requests/handle', vipController.handleVipRequest);
+
+            // Flash Deals
+            adminFastify.get('/api/admin/flash-deals', flashDealController.getAllDeals);
+            adminFastify.post('/api/admin/flash-deals', flashDealController.createDeal);
+            adminFastify.delete('/api/admin/flash-deals/:id', flashDealController.deleteDeal);
         });
     });
 }

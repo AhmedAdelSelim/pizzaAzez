@@ -72,7 +72,7 @@ export default function MenuScreen({ navigation, route }) {
         const nextItem = filteredItems[index + 1];
         return (
             <View style={styles.row}>
-                <View style={{ flex: 1, marginRight: 8 }}>
+                <View style={styles.cardWrapper}>
                     <FoodCard
                         item={item}
                         onPress={() => navigation.navigate('FoodDetail', { item })}
@@ -80,7 +80,7 @@ export default function MenuScreen({ navigation, route }) {
                     />
                 </View>
                 {nextItem ? (
-                    <View style={{ flex: 1, marginLeft: 8 }}>
+                    <View style={styles.cardWrapper}>
                         <FoodCard
                             item={nextItem}
                             onPress={() => navigation.navigate('FoodDetail', { item: nextItem })}
@@ -88,7 +88,7 @@ export default function MenuScreen({ navigation, route }) {
                         />
                     </View>
                 ) : (
-                    <View style={styles.emptyCard} />
+                    <View style={styles.cardWrapper} />
                 )}
             </View>
         );
@@ -153,11 +153,11 @@ const styles = StyleSheet.create({
     },
     row: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
         paddingHorizontal: SIZES.spacing_xl,
+        marginBottom: SIZES.spacing_base,
+        gap: 12,
     },
-    emptyCard: {
+    cardWrapper: {
         flex: 1,
-        marginLeft: 8,
     },
 });

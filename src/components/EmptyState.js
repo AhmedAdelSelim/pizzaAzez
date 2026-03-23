@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import React, { useRef, useEffect } from 'react';
+import { View, Text, StyleSheet, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, FONTS, SIZES } from '../theme/theme';
 
@@ -8,10 +8,41 @@ export default function EmptyState({
     title = 'Nothing here',
     message = 'Items will appear here.',
 }) {
+    const pulseAnim = useRef(new Animated.Value(1)).current;
+    const ringOpacity = useRef(new Animated.Value(0.4)).current;
+
+    useEffect(() => {
+        Animated.loop(
+            Animated.sequence([
+                Animated.parallel([
+                    Animated.timing(pulseAnim, { toValue: 1.08, duration: 1400, useNativeDriver: true }),
+                    Animated.timing(ringOpacity, { toValue: 0.15, duration: 1400, useNativeDriver: true }),
+                ]),
+                Animated.parallel([
+                    Animated.timing(pulseAnim, { toValue: 1, duration: 1400, useNativeDriver: true }),
+                    Animated.timing(ringOpacity, { toValue: 0.4, duration: 1400, useNativeDriver: true }),
+                ]),
+            ])
+        ).start();
+    }, []);
+
     return (
         <View style={styles.container}>
-            <View style={styles.iconCircle}>
-                <Ionicons name={icon} size={48} color={COLORS.textMuted} />
+            <View style={styles.iconWrapper}>
+                <Animated.View
+                    style={[
+                        styles.ring,
+                        {
+                            opacity: ringOpacity,
+                            transform: [{ scale: pulseAnim }],
+                        },
+                    ]}
+                />
+                <Animated.View
+                    style={[styles.iconCircle, { transform: [{ scale: pulseAnim }] }]}
+                >
+                    <Ionicons name={icon} size={46} color={COLORS.primary} />
+                </Animated.View>
             </View>
             <Text style={styles.title}>{title}</Text>
             <Text style={styles.message}>{message}</Text>
@@ -27,14 +58,30 @@ const styles = StyleSheet.create({
         paddingHorizontal: 40,
         paddingVertical: 60,
     },
+    iconWrapper: {
+        width: 120,
+        height: 120,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: 24,
+    },
+    ring: {
+        position: 'absolute',
+        width: 110,
+        height: 110,
+        borderRadius: 55,
+        borderWidth: 2,
+        borderColor: COLORS.primary,
+    },
     iconCircle: {
-        width: 100,
-        height: 100,
-        borderRadius: 50,
+        width: 90,
+        height: 90,
+        borderRadius: 45,
         backgroundColor: COLORS.surface,
         alignItems: 'center',
         justifyContent: 'center',
-        marginBottom: 20,
+        borderWidth: 1.5,
+        borderColor: COLORS.primary + '30',
     },
     title: {
         color: COLORS.text,

@@ -30,19 +30,23 @@ export default function CategoryScreen({ navigation, route }) {
         const nextItem = items[index + 1];
         return (
             <View style={styles.row}>
-                <FoodCard
-                    item={item}
-                    onPress={() => navigation.navigate('FoodDetail', { item })}
-                    onAddToCart={handleAddToCart}
-                />
-                {nextItem ? (
+                <View style={styles.cardWrapper}>
                     <FoodCard
-                        item={nextItem}
-                        onPress={() => navigation.navigate('FoodDetail', { item: nextItem })}
+                        item={item}
+                        onPress={() => navigation.navigate('FoodDetail', { item })}
                         onAddToCart={handleAddToCart}
                     />
+                </View>
+                {nextItem ? (
+                    <View style={styles.cardWrapper}>
+                        <FoodCard
+                            item={nextItem}
+                            onPress={() => navigation.navigate('FoodDetail', { item: nextItem })}
+                            onAddToCart={handleAddToCart}
+                        />
+                    </View>
                 ) : (
-                    <View style={styles.emptyCard} />
+                    <View style={styles.cardWrapper} />
                 )}
             </View>
         );
@@ -136,11 +140,11 @@ const styles = StyleSheet.create({
     },
     row: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
         paddingHorizontal: SIZES.spacing_xl,
+        marginBottom: SIZES.spacing_base,
+        gap: 12,
     },
-    emptyCard: {
+    cardWrapper: {
         flex: 1,
-        marginLeft: 8,
     },
 });

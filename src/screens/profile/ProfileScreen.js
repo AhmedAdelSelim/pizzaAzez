@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import {
-    View, Text, StyleSheet, ScrollView, TouchableOpacity, StatusBar, Alert, Image, ActivityIndicator, Modal
+    View, Text, StyleSheet, ScrollView, TouchableOpacity, StatusBar, Alert, Image, ActivityIndicator, Modal, Animated, Share
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, FONTS, SIZES, SHADOWS } from '../../theme/theme';
 import { useAuth } from '../../context/AuthContext';
@@ -17,14 +18,61 @@ const MENU_ITEMS_LIST = [
     { icon: 'information-circle-outline', label: 'عن التطبيق', route: 'About' },
 ];
 
+function VipBadge({ status }) {
+    const glowAnim = useRef(new Animated.Value(0)).current;
+
+    useEffect(() => {
+        if (status === 'vip') {
+            Animated.loop(
+                Animated.sequence([
+                    Animated.timing(glowAnim, { toValue: 1, duration: 1100, useNativeDriver: false }),
+                    Animated.timing(glowAnim, { toValue: 0, duration: 1100, useNativeDriver: false }),
+                ])
+            ).start();
+        }
+    }, [status]);
+
+    if (status === 'vip') {
+        const shadowOpacity = glowAnim.interpolate({ inputRange: [0, 1], outputRange: [0.4, 0.9] });
+        const shadowRadius = glowAnim.interpolate({ inputRange: [0, 1], outputRange: [6, 16] });
+        return (
+            <Animated.View style={[styles.vipBadge, { shadowColor: '#FFD700', shadowOpacity, shadowRadius, elevation: 8 }]}>
+                <Text style={styles.badgeText}>👑 عضو VIP</Text>
+            </Animated.View>
+        );
+    }
+    if (status === 'pending') {
+        return (
+            <View style={styles.pendingBadge}>
+                <Ionicons name="time-outline" size={12} color={COLORS.white} />
+                <Text style={styles.badgeText}>الطلب قيد المراجعة</Text>
+            </View>
+        );
+    }
+    return null;
+}
+
 export default function ProfileScreen({ navigation }) {
     const { user, logout, ensureAuthenticated, token, refreshProfile } = useAuth();
     const [isRequesting, setIsRequesting] = React.useState(false);
     const [showVipModal, setShowVipModal] = React.useState(false);
+    const [loyaltyPoints, setLoyaltyPoints] = React.useState(null);
 
     React.useEffect(() => {
         ensureAuthenticated();
+        if (token) {
+            api.getLoyaltyPoints(token).then(d => setLoyaltyPoints(d.points || 0)).catch(() => {});
+        }
     }, []);
+
+    const referralCode = user?.phone ? `AZEZ${user.phone.slice(-4)}` : null;
+
+    const handleShareReferral = () => {
+        if (!referralCode) return;
+        Share.share({
+            message: `استخدم كود الإحالة الخاص بي ${referralCode} في تطبيق بيتزا عزيز واحصل على 50 نقطة مجاناً! 🍕`,
+        });
+    };
 
     const handleLogout = () => {
         Alert.alert(
@@ -36,6 +84,8 @@ export default function ProfileScreen({ navigation }) {
             ]
         );
     };
+
+    const isVip = user?.vip_status === 'vip';
 
     return (
         <View style={styles.container}>
@@ -50,30 +100,31 @@ export default function ProfileScreen({ navigation }) {
                 showsVerticalScrollIndicator={false}
             >
                 {/* User Card */}
-                <View style={styles.userCard}>
-                    {user?.image ? (
-                        <Image source={{ uri: user.image }} style={styles.avatarImage} />
-                    ) : (
-                        <View style={styles.avatar}>
-                            <Text style={styles.avatarText}>
-                                {user?.name?.charAt(0)?.toUpperCase() || '؟'}
-                            </Text>
-                        </View>
+                <LinearGradient
+                    colors={isVip ? ['#2D2000', '#1A1A2E'] : [COLORS.surface, COLORS.surface]}
+                    style={styles.userCard}
+                >
+                    {isVip && (
+                        <View style={styles.vipGlowBorder} />
                     )}
+                    <View style={[styles.avatarWrapper, isVip && styles.avatarVipRing]}>
+                        {user?.image ? (
+                            <Image source={{ uri: user.image }} style={styles.avatarImage} />
+                        ) : (
+                            <View style={styles.avatar}>
+                                <Text style={styles.avatarText}>
+                                    {user?.name?.charAt(0)?.toUpperCase() || '؟'}
+                                </Text>
+                            </View>
+                        )}
+                    </View>
                     <View style={styles.userInfo}>
                         <Text style={styles.userName}>{user?.name || 'المستخدم'}</Text>
                         <Text style={styles.userPhone}>{user?.phone || 'بدون رقم هاتف'}</Text>
 
-                        {/* VIP Status/Request Button */}
                         <View style={styles.vipContainer}>
-                            {user?.vip_status === 'vip' ? (
-                                <View style={[styles.badge, styles.vipBadge]}>
-                                    <Text style={styles.badgeText}>عضو VIP 👑</Text>
-                                </View>
-                            ) : user?.vip_status === 'pending' ? (
-                                <View style={[styles.badge, styles.pendingBadge]}>
-                                    <Text style={styles.badgeText}>الطلب قيد المراجعة</Text>
-                                </View>
+                            {user?.vip_status === 'vip' || user?.vip_status === 'pending' ? (
+                                <VipBadge status={user.vip_status} />
                             ) : (
                                 <TouchableOpacity
                                     style={[styles.vipRequestButton, isRequesting && { opacity: 0.7 }]}
@@ -84,7 +135,7 @@ export default function ProfileScreen({ navigation }) {
                                         <ActivityIndicator size="small" color={COLORS.white} />
                                     ) : (
                                         <>
-                                            <Ionicons name="star" size={14} color={COLORS.white} />
+                                            <Ionicons name="star" size={13} color="#FFD700" />
                                             <Text style={styles.vipRequestText}>انضم للـ VIP</Text>
                                         </>
                                     )}
@@ -92,7 +143,44 @@ export default function ProfileScreen({ navigation }) {
                             )}
                         </View>
                     </View>
-                </View>
+                </LinearGradient>
+
+                {/* Loyalty Points Card */}
+                {loyaltyPoints !== null && (
+                    <LinearGradient
+                        colors={['#3D2800', '#1A1A2E']}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 0 }}
+                        style={styles.loyaltyCard}
+                    >
+                        <View style={styles.loyaltyLeft}>
+                            <Text style={styles.loyaltyTitle}>نقاط الولاء ⭐</Text>
+                            <Text style={styles.loyaltyPts}>{loyaltyPoints} نقطة</Text>
+                            <Text style={styles.loyaltySub}>100 نقطة = خصم 10 ج.م</Text>
+                        </View>
+                        <View style={styles.loyaltyRight}>
+                            <Ionicons name="star" size={48} color="rgba(255,215,0,0.25)" />
+                        </View>
+                    </LinearGradient>
+                )}
+
+                {/* Referral Card */}
+                {referralCode && (
+                    <View style={styles.referralCard}>
+                        <View style={styles.referralTop}>
+                            <Ionicons name="people-outline" size={20} color={COLORS.accent} />
+                            <Text style={styles.referralTitle}>كود الإحالة</Text>
+                        </View>
+                        <Text style={styles.referralSub}>شارك كودك واحصل على 50 نقطة لكل صديق</Text>
+                        <View style={styles.referralRow}>
+                            <Text style={styles.referralCode}>{referralCode}</Text>
+                            <TouchableOpacity style={styles.shareBtn} onPress={handleShareReferral}>
+                                <Ionicons name="share-social-outline" size={18} color={COLORS.white} />
+                                <Text style={styles.shareBtnText}>شارك</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                )}
 
                 {/* Menu Items */}
                 <View style={styles.menuCard}>
@@ -102,10 +190,10 @@ export default function ProfileScreen({ navigation }) {
                             activeOpacity={0.6}
                             onPress={() => navigation.navigate('AdminDashboard')}
                         >
-                            <View style={styles.menuIconContainer}>
+                            <View style={[styles.menuIconContainer, { backgroundColor: 'rgba(232,93,44,0.15)' }]}>
                                 <Ionicons name="shield-checkmark" size={20} color={COLORS.primary} />
                             </View>
-                            <Text style={styles.menuLabel}>لوحة الإدارة (Admin Dashboard)</Text>
+                            <Text style={styles.menuLabel}>لوحة الإدارة</Text>
                             <Ionicons name="chevron-back" size={18} color={COLORS.textMuted} />
                         </TouchableOpacity>
                     )}
@@ -145,20 +233,25 @@ export default function ProfileScreen({ navigation }) {
             <Modal
                 visible={showVipModal}
                 transparent={true}
-                animationType="fade"
+                animationType="slide"
                 onRequestClose={() => setShowVipModal(false)}
             >
                 <View style={styles.modalOverlay}>
                     <View style={styles.modalContent}>
-                        <View style={styles.modalHeader}>
-                            <Ionicons name="star" size={30} color="#FFD700" />
+                        <LinearGradient
+                            colors={['#3D2800', '#232946']}
+                            style={styles.modalHeader}
+                        >
+                            <Text style={styles.crownEmoji}>👑</Text>
                             <Text style={styles.modalTitle}>مميزات عضوية VIP</Text>
-                        </View>
+                            <Text style={styles.modalSubtitle}>انضم للنخبة واستمتع بمزايا حصرية</Text>
+                        </LinearGradient>
 
                         <View style={styles.benefitsList}>
-                            <BenefitItem icon="gift-outline" text="خصومات حصرية تصل إلى ٢٥٪ على جميع الطلبات" />
-                            <BenefitItem icon="restaurant-outline" text="تجربة أصناف جديدة قبل الجميع" />
-                            <BenefitItem icon="headset-outline" text="خدمة عملاء مخصصة وذات أولوية" />
+                            <BenefitItem icon="gift-outline" text="خصومات حصرية تصل إلى ٢٥٪ على جميع الطلبات" color="#FFD700" />
+                            <BenefitItem icon="restaurant-outline" text="تجربة أصناف جديدة قبل الجميع" color={COLORS.primary} />
+                            <BenefitItem icon="headset-outline" text="خدمة عملاء مخصصة وذات أولوية" color={COLORS.accent} />
+                            <BenefitItem icon="car-outline" text="توصيل مجاني للطلبات فوق ١٠٠ ج.م" color="#2196F3" />
                         </View>
 
                         <TouchableOpacity
@@ -169,7 +262,7 @@ export default function ProfileScreen({ navigation }) {
                                     setIsRequesting(true);
                                     await api.requestVip(token);
                                     setShowVipModal(false);
-                                    Alert.alert('تم الإرسال', 'تم إرسال طلب الانضمام للـ VIP بنجاح');
+                                    Alert.alert('تم الإرسال ✅', 'تم إرسال طلب الانضمام للـ VIP بنجاح');
                                     await refreshProfile();
                                 } catch (error) {
                                     Alert.alert('خطأ', error.message);
@@ -178,18 +271,26 @@ export default function ProfileScreen({ navigation }) {
                                 }
                             }}
                         >
-                            {isRequesting ? (
-                                <ActivityIndicator color={COLORS.white} />
-                            ) : (
-                                <Text style={styles.confirmVipText}>تأكيد طلب الانضمام</Text>
-                            )}
+                            <LinearGradient
+                                colors={[COLORS.primary, COLORS.primaryDark]}
+                                style={styles.confirmVipGradient}
+                            >
+                                {isRequesting ? (
+                                    <ActivityIndicator color={COLORS.white} />
+                                ) : (
+                                    <>
+                                        <Ionicons name="star" size={18} color="#FFD700" />
+                                        <Text style={styles.confirmVipText}>تأكيد طلب الانضمام</Text>
+                                    </>
+                                )}
+                            </LinearGradient>
                         </TouchableOpacity>
 
                         <TouchableOpacity
                             style={styles.closeModalButton}
                             onPress={() => setShowVipModal(false)}
                         >
-                            <Text style={styles.closeModalText}>إلغاء</Text>
+                            <Text style={styles.closeModalText}>ليس الآن</Text>
                         </TouchableOpacity>
                     </View>
                 </View>
@@ -198,10 +299,12 @@ export default function ProfileScreen({ navigation }) {
     );
 }
 
-function BenefitItem({ icon, text }) {
+function BenefitItem({ icon, text, color }) {
     return (
         <View style={styles.benefitItem}>
-            <Ionicons name={icon} size={22} color={COLORS.primary} />
+            <View style={[styles.benefitIconBox, { backgroundColor: color + '20' }]}>
+                <Ionicons name={icon} size={20} color={color} />
+            </View>
             <Text style={styles.benefitText}>{text}</Text>
         </View>
     );
@@ -230,16 +333,35 @@ const styles = StyleSheet.create({
     userCard: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: COLORS.surface,
         borderRadius: SIZES.radius_xxl,
         padding: SIZES.spacing_xl,
         marginBottom: SIZES.spacing_xl,
         ...SHADOWS.medium,
+        borderWidth: 1,
+        borderColor: COLORS.border,
+        position: 'relative',
+        overflow: 'hidden',
+    },
+    vipGlowBorder: {
+        position: 'absolute',
+        top: 0, left: 0, right: 0, bottom: 0,
+        borderRadius: SIZES.radius_xxl,
+        borderWidth: 1.5,
+        borderColor: '#FFD700',
+    },
+    avatarWrapper: {
+        borderRadius: 36,
+    },
+    avatarVipRing: {
+        borderWidth: 2.5,
+        borderColor: '#FFD700',
+        padding: 2,
+        borderRadius: 36,
     },
     avatar: {
-        width: 56,
-        height: 56,
-        borderRadius: 28,
+        width: 62,
+        height: 62,
+        borderRadius: 31,
         backgroundColor: COLORS.primary,
         alignItems: 'center',
         justifyContent: 'center',
@@ -250,9 +372,9 @@ const styles = StyleSheet.create({
         ...FONTS.bold,
     },
     avatarImage: {
-        width: 56,
-        height: 56,
-        borderRadius: 28,
+        width: 62,
+        height: 62,
+        borderRadius: 31,
     },
     userInfo: {
         flex: 1,
@@ -271,31 +393,38 @@ const styles = StyleSheet.create({
         marginTop: 2,
         textAlign: 'right',
     },
-    badge: {
-        backgroundColor: COLORS.primary,
-        borderRadius: SIZES.radius_full,
-        paddingHorizontal: 12,
-        paddingVertical: 4,
-    },
-    badgeText: {
-        color: COLORS.white,
-        fontSize: SIZES.xs,
-        ...FONTS.bold,
-    },
     vipContainer: {
         marginTop: 8,
         alignItems: 'flex-end',
     },
     vipBadge: {
-        backgroundColor: '#FFD700', // Gold
-        ...SHADOWS.glow('#FFD700'),
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#FFD700',
+        borderRadius: SIZES.radius_full,
+        paddingHorizontal: 12,
+        paddingVertical: 5,
+        shadowOffset: { width: 0, height: 2 },
     },
     pendingBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 5,
         backgroundColor: COLORS.textMuted,
+        borderRadius: SIZES.radius_full,
+        paddingHorizontal: 12,
+        paddingVertical: 5,
+    },
+    badgeText: {
+        color: COLORS.black,
+        fontSize: SIZES.xs,
+        ...FONTS.bold,
     },
     vipRequestButton: {
         flexDirection: 'row',
-        backgroundColor: COLORS.primary,
+        backgroundColor: 'rgba(255,215,0,0.15)',
+        borderWidth: 1,
+        borderColor: '#FFD700',
         paddingHorizontal: 12,
         paddingVertical: 6,
         borderRadius: 12,
@@ -303,7 +432,7 @@ const styles = StyleSheet.create({
         gap: 6,
     },
     vipRequestText: {
-        color: COLORS.white,
+        color: '#FFD700',
         fontSize: 12,
         ...FONTS.bold,
     },
@@ -313,6 +442,8 @@ const styles = StyleSheet.create({
         padding: SIZES.spacing_base,
         marginBottom: SIZES.spacing_xl,
         ...SHADOWS.small,
+        borderWidth: 1,
+        borderColor: COLORS.border,
     },
     menuItem: {
         flexDirection: 'row',
@@ -326,10 +457,10 @@ const styles = StyleSheet.create({
         borderBottomColor: COLORS.border,
     },
     menuIconContainer: {
-        width: 36,
-        height: 36,
-        borderRadius: 18,
-        backgroundColor: 'rgba(232,93,44,0.12)',
+        width: 38,
+        height: 38,
+        borderRadius: 19,
+        backgroundColor: 'rgba(232,93,44,0.10)',
         alignItems: 'center',
         justifyContent: 'center',
     },
@@ -344,10 +475,12 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: 'rgba(255,107,107,0.1)',
+        backgroundColor: 'rgba(255,107,107,0.08)',
         borderRadius: SIZES.radius_xl,
         paddingVertical: 16,
         gap: 8,
+        borderWidth: 1,
+        borderColor: COLORS.error + '30',
     },
     logoutText: {
         color: COLORS.error,
@@ -361,38 +494,81 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         marginTop: 20,
     },
+    loyaltyCard: {
+        flexDirection: 'row', borderRadius: SIZES.radius_xxl, padding: SIZES.spacing_xl,
+        marginBottom: SIZES.spacing_base, overflow: 'hidden', ...SHADOWS.medium,
+        borderWidth: 1, borderColor: '#FFD700' + '30',
+    },
+    loyaltyLeft: { flex: 1 },
+    loyaltyTitle: { color: 'rgba(255,215,0,0.8)', fontSize: SIZES.sm, ...FONTS.semiBold, textAlign: 'right', marginBottom: 4 },
+    loyaltyPts: { color: '#FFD700', fontSize: SIZES.xxxl, ...FONTS.extraBold, textAlign: 'right' },
+    loyaltySub: { color: 'rgba(255,255,255,0.45)', fontSize: SIZES.xs, ...FONTS.regular, textAlign: 'right', marginTop: 4 },
+    loyaltyRight: { justifyContent: 'center' },
+    referralCard: {
+        backgroundColor: COLORS.surface, borderRadius: SIZES.radius_xxl, padding: SIZES.spacing_xl,
+        marginBottom: SIZES.spacing_xl, borderWidth: 1, borderColor: COLORS.accent + '30', ...SHADOWS.small,
+    },
+    referralTop: { flexDirection: 'row-reverse', alignItems: 'center', gap: 8, marginBottom: 6 },
+    referralTitle: { color: COLORS.text, fontSize: SIZES.md, ...FONTS.bold },
+    referralSub: { color: COLORS.textMuted, fontSize: SIZES.sm, ...FONTS.regular, textAlign: 'right', marginBottom: 14 },
+    referralRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+    referralCode: {
+        color: COLORS.accent, fontSize: SIZES.xl, ...FONTS.extraBold,
+        letterSpacing: 3, textAlign: 'right',
+    },
+    shareBtn: {
+        flexDirection: 'row', alignItems: 'center', gap: 6,
+        backgroundColor: COLORS.accent, borderRadius: SIZES.radius_md,
+        paddingHorizontal: 16, paddingVertical: 10,
+    },
+    shareBtnText: { color: COLORS.white, fontSize: SIZES.sm, ...FONTS.bold },
     modalOverlay: {
         flex: 1,
-        backgroundColor: 'rgba(0,0,0,0.6)',
-        justifyContent: 'center',
-        alignItems: 'center',
-        padding: SIZES.spacing_xl,
+        backgroundColor: 'rgba(0,0,0,0.7)',
+        justifyContent: 'flex-end',
     },
     modalContent: {
         backgroundColor: COLORS.surface,
-        borderRadius: SIZES.radius_xxl,
-        padding: SIZES.spacing_xxl,
-        width: '100%',
-        ...SHADOWS.medium,
+        borderTopLeftRadius: SIZES.radius_xxl,
+        borderTopRightRadius: SIZES.radius_xxl,
+        overflow: 'hidden',
+        ...SHADOWS.large,
     },
     modalHeader: {
         alignItems: 'center',
-        marginBottom: SIZES.spacing_xl,
-        gap: 8,
+        paddingVertical: SIZES.spacing_xxl,
+        paddingHorizontal: SIZES.spacing_xl,
+        gap: 6,
+    },
+    crownEmoji: {
+        fontSize: 44,
+        marginBottom: 4,
     },
     modalTitle: {
-        color: COLORS.text,
+        color: COLORS.white,
         fontSize: SIZES.xl,
-        ...FONTS.bold,
+        ...FONTS.extraBold,
+    },
+    modalSubtitle: {
+        color: 'rgba(255,255,255,0.7)',
+        fontSize: SIZES.sm,
+        ...FONTS.regular,
     },
     benefitsList: {
-        marginBottom: SIZES.spacing_xxl,
+        padding: SIZES.spacing_xl,
         gap: 16,
     },
     benefitItem: {
         flexDirection: 'row-reverse',
         alignItems: 'center',
-        gap: 12,
+        gap: 14,
+    },
+    benefitIconBox: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
     benefitText: {
         flex: 1,
@@ -402,11 +578,17 @@ const styles = StyleSheet.create({
         textAlign: 'right',
     },
     confirmVipButton: {
-        backgroundColor: COLORS.primary,
-        borderRadius: SIZES.radius_xl,
-        paddingVertical: 14,
-        alignItems: 'center',
+        marginHorizontal: SIZES.spacing_xl,
         marginBottom: 12,
+        borderRadius: SIZES.radius_xl,
+        overflow: 'hidden',
+    },
+    confirmVipGradient: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 16,
+        gap: 8,
     },
     confirmVipText: {
         color: COLORS.white,
@@ -414,7 +596,8 @@ const styles = StyleSheet.create({
         ...FONTS.bold,
     },
     closeModalButton: {
-        paddingVertical: 8,
+        paddingVertical: 14,
+        paddingBottom: 34,
         alignItems: 'center',
     },
     closeModalText: {

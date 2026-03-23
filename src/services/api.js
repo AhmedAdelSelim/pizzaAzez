@@ -440,6 +440,69 @@ const api = {
         return data;
     },
 
+    // Loyalty Points
+    async getLoyaltyPoints(token) {
+        const headers = { 'Authorization': `Bearer ${token}` };
+        const response = await fetch(`${BASE_URL}/loyalty`, { headers });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || 'فشل تحميل النقاط');
+        return data;
+    },
+
+    async redeemLoyaltyPoints(points, token) {
+        const headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` };
+        const response = await fetch(`${BASE_URL}/loyalty/redeem`, {
+            method: 'POST', headers, body: JSON.stringify({ points }),
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || 'فشل استرداد النقاط');
+        return data;
+    },
+
+    async applyReferral(code, token) {
+        const headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` };
+        const response = await fetch(`${BASE_URL}/loyalty/referral`, {
+            method: 'POST', headers, body: JSON.stringify({ code }),
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || 'كود الإحالة غير صحيح');
+        return data;
+    },
+
+    // Flash Deals
+    async getFlashDeals() {
+        const response = await fetch(`${BASE_URL}/flash-deals`);
+        const data = await response.json();
+        if (!response.ok) throw new Error('فشل تحميل العروض');
+        return data;
+    },
+
+    async getAdminFlashDeals(token) {
+        const headers = { 'Authorization': `Bearer ${token}` };
+        const response = await fetch(`${BASE_URL}/admin/flash-deals`, { headers });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || 'فشل تحميل العروض');
+        return data;
+    },
+
+    async createFlashDeal(dealData, token) {
+        const headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` };
+        const response = await fetch(`${BASE_URL}/admin/flash-deals`, {
+            method: 'POST', headers, body: JSON.stringify(dealData),
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || 'فشل إنشاء العرض');
+        return data;
+    },
+
+    async deleteFlashDeal(id, token) {
+        const headers = { 'Authorization': `Bearer ${token}` };
+        const response = await fetch(`${BASE_URL}/admin/flash-deals/${id}`, { method: 'DELETE', headers });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || 'فشل حذف العرض');
+        return data;
+    },
+
     async handleVipRequest(userId, status, token) {
         const headers = {
             'Content-Type': 'application/json',
