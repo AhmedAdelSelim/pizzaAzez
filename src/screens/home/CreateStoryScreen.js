@@ -11,6 +11,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS, FONTS, SIZES, SHADOWS } from '../../theme/theme';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
+import { uploadStoryImage } from '../../services/supabaseStorage';
 
 const { width, height } = Dimensions.get('window');
 
@@ -98,7 +99,8 @@ function PhotoStory({ onBack, token, user, navigation }) {
         if (!image) { Alert.alert('خطأ', 'يرجى اختيار صورة'); return; }
         setLoading(true);
         try {
-            await api.createStory({ image, title: '' }, token);
+            const publicUrl = await uploadStoryImage(user.id, image);
+            await api.createStory({ image: publicUrl, title: '' }, token);
             Alert.alert('تم ✅', 'تم نشر قصتك!', [{ text: 'حسناً', onPress: () => navigation.goBack() }]);
         } catch (e) { Alert.alert('خطأ', e.message); }
         finally { setLoading(false); }

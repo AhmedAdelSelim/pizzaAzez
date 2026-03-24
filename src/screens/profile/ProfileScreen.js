@@ -66,6 +66,20 @@ export default function ProfileScreen({ navigation }) {
         }
     }, []);
 
+    const [referralStats, setReferralStats] = React.useState(null);
+
+    React.useEffect(() => {
+        if (token) {
+            api.getReferralStats(token).then(d => setReferralStats(d)).catch(() => {});
+        }
+    }, [token]);
+
+    const getLoyaltyTier = (points) => {
+        if (points >= 1000) return { label: 'ذهبي', icon: '🥇', color: '#FFD700', next: null };
+        if (points >= 500)  return { label: 'فضي',  icon: '🥈', color: '#C0C0C0', next: 1000, needed: 1000 - points };
+        return                     { label: 'برونزي', icon: '🥉', color: '#CD7F32', next: 500,  needed: 500 - points };
+    };
+
     const referralCode = user?.phone ? `AZEZ${user.phone.slice(-4)}` : null;
 
     const handleShareReferral = () => {
@@ -87,6 +101,7 @@ export default function ProfileScreen({ navigation }) {
     };
 
     const isVip = user?.vip_status === 'vip';
+    const loyaltyTier = loyaltyPoints !== null ? getLoyaltyTier(loyaltyPoints) : null;
 
     return (
         <View style={styles.container}>
@@ -147,7 +162,7 @@ export default function ProfileScreen({ navigation }) {
                 </LinearGradient>
 
                 {/* Loyalty Points Card */}
-                {loyaltyPoints !== null && (
+                {loyaltyTier !== null && (
                     <LinearGradient
                         colors={['#3D2800', '#1A1A2E']}
                         start={{ x: 0, y: 0 }}
@@ -155,12 +170,18 @@ export default function ProfileScreen({ navigation }) {
                         style={styles.loyaltyCard}
                     >
                         <View style={styles.loyaltyLeft}>
-                            <Text style={styles.loyaltyTitle}>نقاط الولاء ⭐</Text>
+                            <View style={styles.tierRow}>
+                                <Text style={styles.tierEmoji}>{loyaltyTier.icon}</Text>
+                                <Text style={[styles.tierLabel, { color: loyaltyTier.color }]}>{loyaltyTier.label}</Text>
+                            </View>
                             <Text style={styles.loyaltyPts}>{loyaltyPoints} نقطة</Text>
+                            {loyaltyTier.next && (
+                                <Text style={styles.loyaltySub}>{loyaltyTier.needed} نقطة للمستوى التالي</Text>
+                            )}
                             <Text style={styles.loyaltySub}>100 نقطة = خصم 10 ج.م</Text>
                         </View>
                         <View style={styles.loyaltyRight}>
-                            <Ionicons name="star" size={48} color="rgba(255,215,0,0.25)" />
+                            <Text style={{ fontSize: 48 }}>{loyaltyTier.icon}</Text>
                         </View>
                     </LinearGradient>
                 )}
@@ -173,6 +194,19 @@ export default function ProfileScreen({ navigation }) {
                             <Text style={styles.referralTitle}>كود الإحالة</Text>
                         </View>
                         <Text style={styles.referralSub}>شارك كودك واحصل على 50 نقطة لكل صديق</Text>
+                        {referralStats && referralStats.referral_count > 0 && (
+                            <View style={styles.referralStatsRow}>
+                                <View style={styles.referralStat}>
+                                    <Text style={styles.referralStatNum}>{referralStats.referral_count}</Text>
+                                    <Text style={styles.referralStatLabel}>صديق</Text>
+                                </View>
+                                <View style={styles.referralStatDivider} />
+                                <View style={styles.referralStat}>
+                                    <Text style={styles.referralStatNum}>{referralStats.points_from_referrals}</Text>
+                                    <Text style={styles.referralStatLabel}>نقطة مكتسبة</Text>
+                                </View>
+                            </View>
+                        )}
                         <View style={styles.referralRow}>
                             <Text style={styles.referralCode}>{referralCode}</Text>
                             <TouchableOpacity style={styles.shareBtn} onPress={handleShareReferral}>
@@ -501,10 +535,24 @@ const styles = StyleSheet.create({
         borderWidth: 1, borderColor: '#FFD700' + '30',
     },
     loyaltyLeft: { flex: 1 },
-    loyaltyTitle: { color: 'rgba(255,215,0,0.8)', fontSize: SIZES.sm, ...FONTS.semiBold, textAlign: 'right', marginBottom: 4 },
+    tierRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: 6, marginBottom: 4 },
+    tierEmoji: { fontSize: 18 },
+    tierLabel: { fontSize: SIZES.sm, ...FONTS.bold },
     loyaltyPts: { color: '#FFD700', fontSize: SIZES.xxxl, ...FONTS.extraBold, textAlign: 'right' },
     loyaltySub: { color: 'rgba(255,255,255,0.45)', fontSize: SIZES.xs, ...FONTS.regular, textAlign: 'right', marginTop: 4 },
     loyaltyRight: { justifyContent: 'center' },
+    referralStatsRow: {
+        flexDirection: 'row',
+        backgroundColor: COLORS.accent + '10',
+        borderRadius: SIZES.radius_md,
+        padding: 10,
+        marginBottom: 12,
+        alignItems: 'center',
+    },
+    referralStat: { flex: 1, alignItems: 'center' },
+    referralStatNum: { color: COLORS.accent, fontSize: SIZES.xl, ...FONTS.extraBold },
+    referralStatLabel: { color: COLORS.textMuted, fontSize: SIZES.xs, ...FONTS.regular },
+    referralStatDivider: { width: 1, height: 30, backgroundColor: COLORS.border },
     referralCard: {
         backgroundColor: COLORS.surface, borderRadius: SIZES.radius_xxl, padding: SIZES.spacing_xl,
         marginBottom: SIZES.spacing_xl, borderWidth: 1, borderColor: COLORS.accent + '30', ...SHADOWS.small,

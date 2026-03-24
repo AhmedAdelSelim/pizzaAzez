@@ -11,14 +11,17 @@ const FAVORITES_KEY = '@pizzaAzez_favorites';
 export default function FavoritesScreen({ navigation }) {
     const [favorites, setFavorites] = useState([]);
 
-    const loadFavorites = useCallback(async () => {
-        try {
-            const raw = await AsyncStorage.getItem(FAVORITES_KEY);
-            setFavorites(raw ? JSON.parse(raw) : []);
-        } catch {}
-    }, []);
-
-    useFocusEffect(loadFavorites);
+    useFocusEffect(
+        useCallback(() => {
+            async function loadFavorites() {
+                try {
+                    const raw = await AsyncStorage.getItem(FAVORITES_KEY);
+                    setFavorites(raw ? JSON.parse(raw) : []);
+                } catch {}
+            }
+            loadFavorites();
+        }, [])
+    );
 
     return (
         <View style={styles.container}>

@@ -15,6 +15,7 @@ export default function RegisterScreen({ navigation }) {
     const [password, setPassword] = useState('');
     const [phone, setPhone] = useState('');
     const [address, setAddress] = useState('');
+    const [birthday, setBirthday] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [localError, setLocalError] = useState('');
 
@@ -25,7 +26,7 @@ export default function RegisterScreen({ navigation }) {
         if (!password.trim()) return setLocalError('يرجى إدخال كلمة المرور');
         if (password.length < 6) return setLocalError('كلمة المرور يجب أن تكون ٦ أحرف على الأقل');
         try {
-            await register({ name: name.trim(), email: email.trim(), password, phone: phone.trim(), address: address.trim() });
+            await register({ name: name.trim(), email: email.trim(), password, phone: phone.trim(), address: address.trim(), birthday: birthday.trim() || null });
         } catch (e) {
             setLocalError(e.message);
         }
@@ -36,6 +37,7 @@ export default function RegisterScreen({ navigation }) {
         { icon: 'call-outline', placeholder: 'رقم الهاتف (الأساسي)', value: phone, onChangeText: setPhone, keyboard: 'phone-pad' },
         { icon: 'mail-outline', placeholder: 'البريد الإلكتروني (اختياري)', value: email, onChangeText: setEmail, keyboard: 'email-address' },
         { icon: 'location-outline', placeholder: 'عنوان التوصيل', value: address, onChangeText: setAddress },
+        { icon: 'gift-outline', placeholder: 'تاريخ الميلاد (YYYY-MM-DD) اختياري', value: birthday, onChangeText: setBirthday },
     ];
 
     return (

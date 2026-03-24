@@ -10,6 +10,7 @@ import { useAuth } from '../../context/AuthContext';
 import Button from '../../components/Button';
 import ReviewItem from '../../components/ReviewItem';
 import api from '../../services/api';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const COMBO_OPTIONS = [
     { id: 'drink', label: 'مشروب غازي', price: 15, emoji: '🥤' },
@@ -36,6 +37,12 @@ export default function FoodDetailScreen({ navigation, route }) {
     useEffect(() => {
         api.getItemReviews(item.id).then(data => {
             if (Array.isArray(data)) setReviews(data);
+        }).catch(() => {});
+        // Track recently viewed
+        AsyncStorage.getItem('@pizzaAzez_recently_viewed').then(raw => {
+            let list = raw ? JSON.parse(raw) : [];
+            list = [item, ...list.filter(i => i.id !== item.id)].slice(0, 8);
+            AsyncStorage.setItem('@pizzaAzez_recently_viewed', JSON.stringify(list));
         }).catch(() => {});
     }, [item.id]);
 

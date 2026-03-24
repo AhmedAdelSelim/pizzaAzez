@@ -68,6 +68,8 @@ async function routes(fastify, options) {
         protectedFastify.get('/api/loyalty', loyaltyController.getPoints);
         protectedFastify.post('/api/loyalty/redeem', loyaltyController.redeemPoints);
         protectedFastify.post('/api/loyalty/referral', loyaltyController.applyReferral);
+        protectedFastify.get('/api/loyalty/referral-stats', loyaltyController.getReferralStats);
+        protectedFastify.get('/api/loyalty/birthday', loyaltyController.checkBirthdayDiscount);
 
         // Admin Routes
         protectedFastify.register(async function (adminFastify, opts) {

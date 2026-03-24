@@ -14,6 +14,7 @@ export default function EditProfileScreen({ navigation }) {
     const { user, updateProfile } = useAuth();
     const [name, setName] = useState(user?.name || '');
     const [phone, setPhone] = useState(user?.phone || '');
+    const [birthday, setBirthday] = useState(user?.birthday || '');
     const [imageUri, setImageUri] = useState(user?.image || null);
     const [isLoading, setIsLoading] = useState(false);
     const [isUploading, setIsUploading] = useState(false);
@@ -70,6 +71,7 @@ export default function EditProfileScreen({ navigation }) {
         try {
             await updateProfile({
                 name: name.trim(),
+                birthday: birthday.trim() || null,
             });
             Alert.alert('نجاح', 'تم تحديث البيانات بنجاح', [
                 { text: 'تم', onPress: () => navigation.goBack() }
@@ -153,6 +155,20 @@ export default function EditProfileScreen({ navigation }) {
                                 keyboardType="phone-pad"
                                 textAlign="right"
                                 editable={false}
+                            />
+                        </View>
+                    </View>
+
+                    <View style={styles.inputGroup}>
+                        <Text style={styles.inputLabel}>تاريخ الميلاد (اختياري)</Text>
+                        <View style={styles.inputContainer}>
+                            <TextInput
+                                style={styles.input}
+                                value={birthday}
+                                onChangeText={setBirthday}
+                                placeholder="YYYY-MM-DD (مثال: 1995-06-15)"
+                                placeholderTextColor={COLORS.textMuted}
+                                textAlign="right"
                             />
                         </View>
                     </View>

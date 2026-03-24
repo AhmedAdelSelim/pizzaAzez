@@ -36,11 +36,24 @@ export default function CheckoutScreen({ navigation }) {
     const [pointsToRedeem, setPointsToRedeem] = useState(0);
     const [redeemingPoints, setRedeemingPoints] = useState(false);
     const [pointsDiscount, setPointsDiscount] = useState(0);
+    const [birthdayDiscount, setBirthdayDiscount] = useState(0);
 
     useEffect(() => {
         fetchZones();
         fetchLoyalty();
+        checkBirthday();
     }, []);
+
+    const checkBirthday = async () => {
+        if (!token) return;
+        try {
+            const result = await api.checkBirthdayDiscount(token);
+            if (result.has_discount) {
+                setBirthdayDiscount(result.discount_percent);
+                Alert.alert('🎂 عيد ميلاد سعيد!', `لديك خصم ${result.discount_percent}٪ خاص بعيد ميلادك اليوم!`);
+            }
+        } catch {}
+    };
 
     const fetchZones = async () => {
         try {
@@ -73,7 +86,8 @@ export default function CheckoutScreen({ navigation }) {
         }
     };
 
-    const finalTotal = Math.max(0, getTotal() - pointsDiscount);
+    const birthdayDiscountAmount = Math.floor(getSubtotal() * birthdayDiscount / 100);
+    const finalTotal = Math.max(0, getTotal() - pointsDiscount - birthdayDiscountAmount);
 
     const handlePlaceOrder = async () => {
         if (!selectedZone) {
@@ -98,7 +112,7 @@ export default function CheckoutScreen({ navigation }) {
                 notes: notes.trim(),
                 deliveryZone: selectedZone.name,
                 deliveryFee: getDeliveryFee(),
-                discount: getDiscount() + pointsDiscount,
+                discount: getDiscount() + pointsDiscount + birthdayDiscountAmount,
                 total: finalTotal,
                 couponCode: appliedCoupon?.code || null,
                 paymentMethod,
@@ -150,6 +164,14 @@ export default function CheckoutScreen({ navigation }) {
                             </TouchableOpacity>
                         ))}
                     </View>
+                    {selectedZone && (
+                        <View style={styles.estimatedRow}>
+                            <Ionicons name="time-outline" size={14} color={COLORS.textMuted} />
+                            <Text style={styles.estimatedText}>
+                                الوقت المتوقع: {selectedZone.estimated_minutes ? `${selectedZone.estimated_minutes} دقيقة` : '٣٠-٤٥ دقيقة'}
+                            </Text>
+                        </View>
+                    )}
                 </View>
 
                 {/* Delivery Details */}
@@ -319,6 +341,12 @@ export default function CheckoutScreen({ navigation }) {
                                 <Text style={[styles.summaryValue, styles.discountText]}>- {pointsDiscount} ج.م</Text>
                             </View>
                         )}
+                        {birthdayDiscountAmount > 0 && (
+                            <View style={styles.summaryRow}>
+                                <Text style={styles.summaryLabel}>خصم عيد الميلاد 🎂</Text>
+                                <Text style={[styles.summaryValue, styles.discountText]}>- {birthdayDiscountAmount} ج.م</Text>
+                            </View>
+                        )}
                         <View style={styles.summaryRow}>
                             <Text style={styles.summaryLabel}>التوصيل</Text>
                             <Text style={[styles.summaryValue, getDeliveryFee() === 0 && styles.free]}>
@@ -369,6 +397,12 @@ const styles = StyleSheet.create({
     zoneChipSelected: { borderColor: COLORS.primary, backgroundColor: 'rgba(232,93,44,0.1)' },
     zoneText: { color: COLORS.textMuted, fontSize: SIZES.sm, ...FONTS.medium },
     zoneTextSelected: { color: COLORS.primary, ...FONTS.bold },
+    estimatedRow: {
+        flexDirection: 'row-reverse', alignItems: 'center', gap: 6, marginTop: 10,
+        backgroundColor: COLORS.surface, borderRadius: SIZES.radius_md,
+        paddingHorizontal: 12, paddingVertical: 8, borderWidth: 1, borderColor: COLORS.border,
+    },
+    estimatedText: { color: COLORS.textMuted, fontSize: SIZES.sm, ...FONTS.medium },
     inputBox: {
         backgroundColor: COLORS.surface, borderRadius: SIZES.radius_md,
         paddingHorizontal: 16, paddingVertical: 14, marginBottom: 10,

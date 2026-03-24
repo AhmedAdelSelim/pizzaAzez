@@ -65,6 +65,7 @@ class OrderService {
         // Map camelCase fields to snake_case for the DB
         const dbData = {
             id: orderData.id,
+            user_id: orderData.user_id,
             date: orderData.date,
             status: orderData.status,
             total: orderData.total,

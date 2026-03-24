@@ -26,6 +26,22 @@ const loyaltyController = {
             return reply.status(400).send({ message: error.message });
         }
     },
+
+    async getReferralStats(request, reply) {
+        try {
+            return await loyaltyService.getReferralStats(request.user.id);
+        } catch (error) {
+            return reply.status(400).send({ message: error.message });
+        }
+    },
+
+    async checkBirthdayDiscount(request, reply) {
+        try {
+            return await loyaltyService.checkBirthdayDiscount(request.user.id);
+        } catch (error) {
+            return reply.status(400).send({ message: error.message });
+        }
+    },
 };
 
 module.exports = loyaltyController;

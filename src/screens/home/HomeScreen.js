@@ -3,6 +3,7 @@ import {
     View, Text, StyleSheet, ScrollView, FlatList,
     TouchableOpacity, StatusBar, Dimensions, Animated, TextInput,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, FONTS, SIZES, SHADOWS } from '../../theme/theme';
@@ -77,7 +78,14 @@ export default function HomeScreen({ navigation }) {
     const popularItems = getPopularItems();
 
     const [searchQuery, setSearchQuery] = useState('');
+    const [recentlyViewed, setRecentlyViewed] = useState([]);
     const [currentBanner, setCurrentBanner] = useState(0);
+
+    useEffect(() => {
+        AsyncStorage.getItem('@pizzaAzez_recently_viewed').then(raw => {
+            if (raw) setRecentlyViewed(JSON.parse(raw));
+        }).catch(() => {});
+    }, []);
     const fadeAnim = useRef(new Animated.Value(1)).current;
     const slideAnim = useRef(new Animated.Value(0)).current;
     const [flashDeal, setFlashDeal] = useState(null);
@@ -265,6 +273,35 @@ export default function HomeScreen({ navigation }) {
                     />
                 </View>
 
+                {/* Recently Viewed */}
+                {recentlyViewed.length > 0 && (
+                    <View style={styles.section}>
+                        <View style={styles.sectionHeader}>
+                            <Text style={styles.sectionTitle}>👁 شاهدتها مؤخراً</Text>
+                        </View>
+                        <FlatList
+                            data={recentlyViewed}
+                            horizontal
+                            showsHorizontalScrollIndicator={false}
+                            keyExtractor={item => item.id}
+                            contentContainerStyle={styles.categoryList}
+                            renderItem={({ item }) => (
+                                <TouchableOpacity
+                                    style={styles.recentItem}
+                                    onPress={() => navigation.navigate('FoodDetail', { item })}
+                                    activeOpacity={0.8}
+                                >
+                                    <Text style={styles.recentEmoji}>
+                                        {({ '1': '🧀', '2': '🍗', '3': '🥩', '4': '🌯', '5': '🔥', '6': '🍕', '7': '🥧', '8': '🍫', '9': '🥟', '10': '🍟' })[item.category_id] || '🍕'}
+                                    </Text>
+                                    <Text style={styles.recentName} numberOfLines={1}>{item.name}</Text>
+                                    <Text style={styles.recentPrice}>{item.price} ج.م</Text>
+                                </TouchableOpacity>
+                            )}
+                        />
+                    </View>
+                )}
+
                 {/* Popular Items */}
                 <View style={styles.section}>
                     <View style={styles.sectionHeader}>
@@ -441,6 +478,19 @@ const styles = StyleSheet.create({
         width: '48%',
         marginBottom: SIZES.spacing_lg,
     },
+    recentItem: {
+        backgroundColor: COLORS.surface,
+        borderRadius: SIZES.radius_xl,
+        padding: 12,
+        marginRight: 10,
+        width: 100,
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: COLORS.border,
+    },
+    recentEmoji: { fontSize: 32, marginBottom: 6 },
+    recentName: { color: COLORS.text, fontSize: SIZES.xs, ...FONTS.bold, textAlign: 'center', marginBottom: 4 },
+    recentPrice: { color: COLORS.primary, fontSize: SIZES.xs, ...FONTS.semiBold },
     flashBannerWrapper: {
         marginHorizontal: SIZES.spacing_xl,
         marginBottom: SIZES.spacing_base,

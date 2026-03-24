@@ -237,7 +237,6 @@ export default function AdminDashboardScreen({ navigation }) {
 
                 <View style={{ height: 100 }} />
             </ScrollView>
-        </View>
 
             {/* Broadcast Modal */}
             <Modal visible={showBroadcast} transparent animationType="slide" onRequestClose={() => setShowBroadcast(false)}>

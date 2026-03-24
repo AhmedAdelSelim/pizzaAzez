@@ -50,7 +50,30 @@ class LoyaltyService {
         const REFERRAL_POINTS = 50;
         await this.awardPoints(referrer.id, REFERRAL_POINTS);
         await this.awardPoints(newUserId, REFERRAL_POINTS);
+
+        // Track referral count
+        const currentCount = referrer.referral_count || 0;
+        await userRepository.update({ id: referrer.id }, { referral_count: currentCount + 1 });
+
         return { success: true, points_awarded: REFERRAL_POINTS };
+    }
+
+    async getReferralStats(userId) {
+        const user = await userRepository.findOne({ id: userId });
+        return {
+            referral_count: user?.referral_count || 0,
+            points_from_referrals: (user?.referral_count || 0) * 50,
+            referral_code: user?.phone ? `AZEZ${user.phone.slice(-4)}` : null,
+        };
+    }
+
+    async checkBirthdayDiscount(userId) {
+        const user = await userRepository.findOne({ id: userId });
+        if (!user?.birthday) return { has_discount: false };
+        const today = new Date();
+        const bday = new Date(user.birthday);
+        const isMatch = bday.getMonth() === today.getMonth() && bday.getDate() === today.getDate();
+        return { has_discount: isMatch, discount_percent: isMatch ? 10 : 0 };
     }
 }
 

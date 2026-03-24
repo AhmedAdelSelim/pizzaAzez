@@ -52,3 +52,32 @@ export async function uploadProfileImage(userId, imageUri, previousImageUrl = nu
 
     return urlData.publicUrl;
 }
+
+/**
+ * Upload a story image to Supabase Storage.
+ * @param {string} userId - user ID for file naming
+ * @param {string} imageUri - local file URI from image picker
+ * @returns {string} public URL of the uploaded image
+ */
+export async function uploadStoryImage(userId, imageUri) {
+    const fileName = `${userId}_${Date.now()}.jpg`;
+
+    const response = await fetch(imageUri);
+    const blob = await response.blob();
+    const arrayBuffer = await new Response(blob).arrayBuffer();
+
+    const { data, error } = await supabase.storage
+        .from('profile-images')
+        .upload(`stories/${fileName}`, arrayBuffer, {
+            contentType: 'image/jpeg',
+            upsert: true,
+        });
+
+    if (error) throw new Error(`Upload failed: ${error.message}`);
+
+    const { data: urlData } = supabase.storage
+        .from('profile-images')
+        .getPublicUrl(`stories/${fileName}`);
+
+    return urlData.publicUrl;
+}

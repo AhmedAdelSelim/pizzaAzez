@@ -6,7 +6,27 @@ class AdminService {
     }
 
     async updateOrderStatus(orderId, status) {
-        return await orderRepository.update({ id: orderId }, { status });
+        const result = await orderRepository.update({ id: orderId }, { status });
+        // Notify the order owner
+        this.notifyOrderUser(result, status).catch(() => {});
+        return result;
+    }
+
+    async notifyOrderUser(order, status) {
+        if (!order.user_id) return;
+        const user = await userRepository.findOne({ id: order.user_id });
+        if (!user?.push_token) return;
+        const statusMessages = {
+            preparing: { title: 'جاري التحضير 👨‍🍳', body: `طلبك #${order.id.slice(-6)} جاري تحضيره الآن!` },
+            baking:    { title: 'في الفرن 🔥',        body: `طلبك #${order.id.slice(-6)} يُخبز الآن!` },
+            shipping:  { title: 'في الطريق 🛵',        body: `طلبك #${order.id.slice(-6)} خرج للتوصيل!` },
+            delivered: { title: 'تم التوصيل ✅',       body: `تم تسليم طلبك #${order.id.slice(-6)}. شهية طيبة!` },
+            cancelled: { title: 'تم الإلغاء ❌',       body: `تم إلغاء طلبك #${order.id.slice(-6)}.` },
+        };
+        const msg = statusMessages[status];
+        if (!msg) return;
+        const pushService = require('./pushService');
+        await pushService.sendNotification([user.push_token], msg.title, msg.body, { orderId: order.id });
     }
 
     async getMenuItems(categoryId) {

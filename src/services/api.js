@@ -530,6 +530,22 @@ const api = {
         return data;
     },
 
+    async getReferralStats(token) {
+        const headers = { 'Authorization': `Bearer ${token}` };
+        const response = await fetch(`${BASE_URL}/loyalty/referral-stats`, { headers });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || 'فشل تحميل إحصائيات الإحالة');
+        return data;
+    },
+
+    async checkBirthdayDiscount(token) {
+        const headers = { 'Authorization': `Bearer ${token}` };
+        const response = await fetch(`${BASE_URL}/loyalty/birthday`, { headers });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || 'فشل التحقق من خصم عيد الميلاد');
+        return data;
+    },
+
     async cancelOrder(orderId, token) {
         const headers = { 'Authorization': `Bearer ${token}` };
         const response = await fetch(`${BASE_URL}/orders/${orderId}/cancel`, { method: 'PUT', headers });
