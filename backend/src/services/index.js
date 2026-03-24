@@ -5,7 +5,8 @@ const {
     orderRepository,
     deliveryZoneRepository,
     storyRepository,
-    couponRepository
+    couponRepository,
+    reviewRepository,
 } = require('../repositories');
 
 class AuthService {
@@ -45,7 +46,8 @@ class MenuService {
 
     async getMenuItems(categoryId) {
         const filter = categoryId ? { category_id: categoryId } : {};
-        return await menuItemRepository.find(filter);
+        const items = await menuItemRepository.find(filter);
+        return items.filter(item => item.is_available !== false);
     }
 
     async getMenuItemById(id) {
@@ -102,8 +104,43 @@ class OrderService {
         }
     }
 
-    async getOrders() {
-        return await orderRepository.find({});
+    async getOrders(userId) {
+        return await orderRepository.find({ user_id: userId });
+    }
+
+    async cancelOrder(orderId, userId) {
+        const order = await orderRepository.findOne({ id: orderId });
+        if (!order) throw new Error('الطلب غير موجود');
+        if (order.user_id !== userId) throw new Error('غير مصرح');
+        if (!['pending', 'preparing'].includes(order.status)) {
+            throw new Error('لا يمكن إلغاء هذا الطلب بعد أن بدأ التحضير');
+        }
+        return await orderRepository.update({ id: orderId }, { status: 'cancelled' });
+    }
+}
+
+class ReviewService {
+    async addReview(menuItemId, userId, userName, rating, comment) {
+        const existing = await reviewRepository.findOne({ menu_item_id: menuItemId, user_id: userId });
+        if (existing) throw new Error('لقد قمت بتقييم هذا الصنف مسبقاً');
+        const review = await reviewRepository.create({
+            id: 'REV_' + Date.now(),
+            menu_item_id: menuItemId,
+            user_id: userId,
+            user_name: userName,
+            rating: Math.min(5, Math.max(1, rating)),
+            comment: comment || '',
+            created_at: new Date().toISOString(),
+        });
+        // Update item average rating
+        const reviews = await reviewRepository.find({ menu_item_id: menuItemId });
+        const avg = reviews.reduce((s, r) => s + r.rating, 0) / reviews.length;
+        await menuItemRepository.update({ id: menuItemId }, { rating: Math.round(avg * 10) / 10 });
+        return review;
+    }
+
+    async getReviews(menuItemId) {
+        return await reviewRepository.find({ menu_item_id: menuItemId });
     }
 }
 
@@ -164,6 +201,7 @@ module.exports = {
     authService: new AuthService(),
     menuService: new MenuService(),
     orderService: new OrderService(),
+    reviewService: new ReviewService(),
     profileService: new ProfileService(),
     miscService: new MiscService(),
     couponService: new CouponService(),

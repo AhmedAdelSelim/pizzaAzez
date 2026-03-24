@@ -195,7 +195,29 @@ const adminController = {
         } catch (error) {
             return reply.status(400).send({ message: error.message });
         }
-    }
+    },
+
+    async toggleMenuItemAvailability(request, reply) {
+        try {
+            const { id } = request.params;
+            const { is_available } = request.body;
+            const result = await adminService.toggleMenuItemAvailability(id, is_available);
+            reply.send(result);
+        } catch (error) {
+            return reply.status(400).send({ message: error.message });
+        }
+    },
+
+    async broadcastNotification(request, reply) {
+        try {
+            const { title, body } = request.body;
+            if (!title || !body) return reply.status(400).send({ message: 'العنوان والمحتوى مطلوبان' });
+            const result = await adminService.broadcastNotification(title, body);
+            reply.send(result);
+        } catch (error) {
+            return reply.status(400).send({ message: error.message });
+        }
+    },
 };
 
 module.exports = adminController;

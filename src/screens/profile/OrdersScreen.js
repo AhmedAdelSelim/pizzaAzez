@@ -1,16 +1,18 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
-    View, Text, StyleSheet, FlatList, StatusBar, TouchableOpacity, ActivityIndicator
+    View, Text, StyleSheet, FlatList, StatusBar, TouchableOpacity, ActivityIndicator, Alert
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, FONTS, SIZES, SHADOWS } from '../../theme/theme';
 import { useAuth } from '../../context/AuthContext';
+import { useCart } from '../../context/CartContext';
 import api from '../../services/api';
 import OrderJourneyTracker from '../../components/OrderJourneyTracker';
 
 export default function OrdersScreen({ navigation }) {
     const { token, ensureAuthenticated } = useAuth();
+    const { addItem, clearCart } = useCart();
 
     useEffect(() => {
         ensureAuthenticated();
@@ -34,6 +36,14 @@ export default function OrdersScreen({ navigation }) {
         fetchOrders();
     }, [fetchOrders]);
 
+    // Auto-refresh every 30s for active orders
+    useEffect(() => {
+        const interval = setInterval(() => {
+            fetchOrders();
+        }, 30000);
+        return () => clearInterval(interval);
+    }, [fetchOrders]);
+
     const getStatusConfig = (status) => {
         switch (status) {
             case 'pending': return { color: '#9E9E9E', label: 'تم الاستلام', icon: 'receipt-outline' };
@@ -47,6 +57,56 @@ export default function OrdersScreen({ navigation }) {
     };
 
     const isActiveStatus = (status) => ['pending', 'preparing', 'baking', 'shipping'].includes(status);
+
+    const handleCancelOrder = (order) => {
+        Alert.alert(
+            'إلغاء الطلب',
+            'هل أنت متأكد أنك تريد إلغاء هذا الطلب؟',
+            [
+                { text: 'تراجع', style: 'cancel' },
+                {
+                    text: 'نعم، إلغاء الطلب',
+                    style: 'destructive',
+                    onPress: async () => {
+                        try {
+                            await api.cancelOrder(order.id, token);
+                            fetchOrders();
+                        } catch (error) {
+                            Alert.alert('خطأ', error.message);
+                        }
+                    },
+                },
+            ]
+        );
+    };
+
+    const handleReorder = (order) => {
+        if (!order.items || order.items.length === 0) return;
+        Alert.alert(
+            'إعادة الطلب',
+            'هل تريد إضافة نفس المنتجات إلى سلة التسوق؟',
+            [
+                { text: 'إلغاء', style: 'cancel' },
+                {
+                    text: 'نعم، أضف إلى السلة',
+                    onPress: () => {
+                        clearCart();
+                        order.items.forEach((item) => {
+                            addItem({
+                                id: item.id,
+                                name: item.name,
+                                price: item.price,
+                                quantity: item.quantity,
+                                selectedSize: item.selectedSize || item.size || null,
+                                image: item.image || null,
+                            });
+                        });
+                        navigation.navigate('CartTab');
+                    },
+                },
+            ]
+        );
+    };
 
     if (loading) {
         return (
@@ -148,13 +208,24 @@ export default function OrdersScreen({ navigation }) {
                                     <Text style={styles.totalLabel}>
                                         الإجمالي: <Text style={styles.totalValue}>{item.total} ج.م</Text>
                                     </Text>
-                                    <TouchableOpacity
-                                        style={styles.reorderButton}
-                                        onPress={() => navigation.navigate('MenuTab')}
-                                    >
-                                        <Ionicons name="refresh-outline" size={14} color={COLORS.primary} />
-                                        <Text style={styles.reorderText}>إعادة طلب</Text>
-                                    </TouchableOpacity>
+                                    <View style={styles.footerActions}>
+                                        {['pending', 'preparing'].includes(item.status) && (
+                                            <TouchableOpacity
+                                                style={styles.cancelButton}
+                                                onPress={() => handleCancelOrder(item)}
+                                            >
+                                                <Ionicons name="close-circle-outline" size={14} color={COLORS.error} />
+                                                <Text style={styles.cancelText}>إلغاء</Text>
+                                            </TouchableOpacity>
+                                        )}
+                                        <TouchableOpacity
+                                            style={styles.reorderButton}
+                                            onPress={() => handleReorder(item)}
+                                        >
+                                            <Ionicons name="refresh-outline" size={14} color={COLORS.primary} />
+                                            <Text style={styles.reorderText}>إعادة طلب</Text>
+                                        </TouchableOpacity>
+                                    </View>
                                 </View>
                             </View>
                         );
@@ -302,6 +373,26 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         alignItems: 'center',
         marginTop: 14,
+    },
+    footerActions: {
+        flexDirection: 'row',
+        gap: 8,
+    },
+    cancelButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: COLORS.error + '15',
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        borderRadius: SIZES.radius_md,
+        borderWidth: 1,
+        borderColor: COLORS.error + '30',
+        gap: 4,
+    },
+    cancelText: {
+        color: COLORS.error,
+        fontSize: SIZES.xs,
+        ...FONTS.bold,
     },
     totalLabel: {
         color: COLORS.textSecondary,

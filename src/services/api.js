@@ -528,7 +528,52 @@ const api = {
         const data = await response.json();
         if (!response.ok) throw new Error(data.message || 'فشل معالجة الطلب');
         return data;
-    }
+    },
+
+    async cancelOrder(orderId, token) {
+        const headers = { 'Authorization': `Bearer ${token}` };
+        const response = await fetch(`${BASE_URL}/orders/${orderId}/cancel`, { method: 'PUT', headers });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || 'فشل إلغاء الطلب');
+        return data;
+    },
+
+    async getItemReviews(itemId) {
+        const response = await fetch(`${BASE_URL}/menu/${itemId}/reviews`);
+        const data = await response.json();
+        if (!response.ok) throw new Error('فشل تحميل التقييمات');
+        return data;
+    },
+
+    async addItemReview(itemId, rating, comment, token) {
+        const headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` };
+        const response = await fetch(`${BASE_URL}/menu/${itemId}/review`, {
+            method: 'POST', headers, body: JSON.stringify({ rating, comment }),
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || 'فشل إرسال التقييم');
+        return data;
+    },
+
+    async toggleMenuItemAvailability(itemId, is_available, token) {
+        const headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` };
+        const response = await fetch(`${BASE_URL}/admin/menu/${itemId}/availability`, {
+            method: 'PUT', headers, body: JSON.stringify({ is_available }),
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || 'فشل تحديث حالة الصنف');
+        return data;
+    },
+
+    async broadcastNotification(title, body, token) {
+        const headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` };
+        const response = await fetch(`${BASE_URL}/admin/broadcast`, {
+            method: 'POST', headers, body: JSON.stringify({ title, body }),
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || 'فشل إرسال الإشعار');
+        return data;
+    },
 };
 
 export default api;

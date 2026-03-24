@@ -7,6 +7,7 @@ const orderRepository = new BaseRepository('orders');
 const deliveryZoneRepository = new BaseRepository('delivery_zones');
 const storyRepository = new BaseRepository('stories');
 const couponRepository = new BaseRepository('coupons');
+const reviewRepository = new BaseRepository('reviews');
 
 module.exports = {
     userRepository,
@@ -16,5 +17,6 @@ module.exports = {
     deliveryZoneRepository,
     storyRepository,
     couponRepository,
+    reviewRepository,
     suggestionRepository: require('./suggestionRepository'),
 };

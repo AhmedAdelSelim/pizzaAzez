@@ -11,6 +11,7 @@ import api from '../../services/api';
 const MENU_ITEMS_LIST = [
     { icon: 'person-outline', label: 'تعديل الملف الشخصي', route: 'EditProfile' },
     { icon: 'time-outline', label: 'سجل الطلبات', route: 'Orders' },
+    { icon: 'heart-outline', label: 'المفضلة', route: 'Favorites' },
     { icon: 'location-outline', label: 'عناوين التوصيل' },
     { icon: 'card-outline', label: 'طريقة الدفع' },
     { icon: 'help-circle-outline', label: 'المساعدة والدعم' },

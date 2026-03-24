@@ -1,4 +1,4 @@
-const { authService, menuService, orderService, profileService, miscService, couponService } = require('../services');
+const { authService, menuService, orderService, reviewService, profileService, miscService, couponService } = require('../services');
 
 const authController = {
     async login(request, reply) {
@@ -57,7 +57,38 @@ const orderController = {
 
     async getOrders(request) {
         return await orderService.getOrders(request.user.id);
+    },
+
+    async cancelOrder(request, reply) {
+        try {
+            return await orderService.cancelOrder(request.params.id, request.user.id);
+        } catch (error) {
+            return reply.status(400).send({ message: error.message });
+        }
     }
+};
+
+const reviewController = {
+    async addReview(request, reply) {
+        try {
+            const { userRepository } = require('../repositories');
+            const user = await userRepository.findOne({ id: request.user.id });
+            const { rating, comment } = request.body;
+            return await reviewService.addReview(
+                request.params.id,
+                request.user.id,
+                user?.name || 'مستخدم',
+                rating,
+                comment
+            );
+        } catch (error) {
+            return reply.status(400).send({ message: error.message });
+        }
+    },
+
+    async getReviews(request) {
+        return await reviewService.getReviews(request.params.id);
+    },
 };
 
 const profileController = {
@@ -123,6 +154,7 @@ module.exports = {
     authController,
     menuController,
     orderController,
+    reviewController,
     profileController,
     miscController,
     couponController,

@@ -2,10 +2,36 @@ import { View, Text, StyleSheet, TouchableOpacity, Image, Animated } from 'react
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { COLORS, FONTS, SIZES, SHADOWS } from '../theme/theme';
-import React, { useRef } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+const FAVORITES_KEY = '@pizzaAzez_favorites';
 
 export default function FoodCard({ item, onPress, onAddToCart }) {
     const scaleAnim = useRef(new Animated.Value(1)).current;
+    const [isFavorite, setIsFavorite] = useState(false);
+
+    useEffect(() => {
+        AsyncStorage.getItem(FAVORITES_KEY).then(raw => {
+            const favs = raw ? JSON.parse(raw) : [];
+            setIsFavorite(favs.some(f => f.id === item.id));
+        }).catch(() => {});
+    }, [item.id]);
+
+    const toggleFavorite = async (e) => {
+        e.stopPropagation?.();
+        try {
+            const raw = await AsyncStorage.getItem(FAVORITES_KEY);
+            let favs = raw ? JSON.parse(raw) : [];
+            if (isFavorite) {
+                favs = favs.filter(f => f.id !== item.id);
+            } else {
+                favs.push(item);
+            }
+            await AsyncStorage.setItem(FAVORITES_KEY, JSON.stringify(favs));
+            setIsFavorite(!isFavorite);
+        } catch {}
+    };
 
     const handleAdd = (e) => {
         e.stopPropagation?.();
@@ -41,6 +67,9 @@ export default function FoodCard({ item, onPress, onAddToCart }) {
                         <Text style={styles.specialText}>🔥 عرض</Text>
                     </View>
                 )}
+                <TouchableOpacity onPress={toggleFavorite} style={styles.favButton} activeOpacity={0.8}>
+                    <Ionicons name={isFavorite ? 'heart' : 'heart-outline'} size={18} color={isFavorite ? '#FF4757' : COLORS.white} />
+                </TouchableOpacity>
             </View>
 
             <View style={styles.info}>
@@ -111,6 +140,17 @@ const styles = StyleSheet.create({
         borderRadius: SIZES.radius_sm,
         paddingHorizontal: 8,
         paddingVertical: 3,
+    },
+    favButton: {
+        position: 'absolute',
+        top: 8,
+        right: 8,
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+        backgroundColor: 'rgba(0,0,0,0.35)',
+        alignItems: 'center',
+        justifyContent: 'center',
     },
     specialText: {
         color: COLORS.white,

@@ -29,6 +29,7 @@ import SuggestionsScreen from '../screens/profile/SuggestionsScreen';
 import AboutScreen from '../screens/profile/AboutScreen';
 import OrdersScreen from '../screens/profile/OrdersScreen';
 import EditProfileScreen from '../screens/profile/EditProfileScreen';
+import FavoritesScreen from '../screens/profile/FavoritesScreen';
 
 // Admin Screens
 import AdminDashboardScreen from '../screens/admin/AdminDashboardScreen';
@@ -187,6 +188,7 @@ function MainStack() {
             <Stack.Screen name="About" component={AboutScreen} />
             <Stack.Screen name="Orders" component={OrdersScreen} />
             <Stack.Screen name="EditProfile" component={EditProfileScreen} />
+            <Stack.Screen name="Favorites" component={FavoritesScreen} />
         </Stack.Navigator>
     );
 }

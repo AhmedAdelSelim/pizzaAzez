@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, StatusBar, Alert, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, StatusBar, Alert, KeyboardAvoidingView, Platform, ActivityIndicator, Switch } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, FONTS, SIZES, SHADOWS } from '../../theme/theme';
 import { useAuth } from '../../context/AuthContext';
@@ -19,6 +19,7 @@ export default function AdminMenuFormScreen({ route, navigation }) {
         image: item?.image || '',
         calories: item?.calories?.toString() || '',
         preparation_time: item?.preparation_time || '',
+        is_available: item?.is_available !== false,
     });
 
     const [categories, setCategories] = useState([]);
@@ -168,7 +169,17 @@ export default function AdminMenuFormScreen({ route, navigation }) {
                     </View>
                 </View>
 
-                <TouchableOpacity 
+                <View style={styles.switchRow}>
+                    <Text style={styles.label}>متاح للطلب</Text>
+                    <Switch
+                        value={formData.is_available}
+                        onValueChange={(val) => setFormData({ ...formData, is_available: val })}
+                        trackColor={{ false: COLORS.border, true: COLORS.primary + '60' }}
+                        thumbColor={formData.is_available ? COLORS.primary : COLORS.textMuted}
+                    />
+                </View>
+
+                <TouchableOpacity
                     style={[styles.saveButton, loading && styles.saveButtonDisabled]}
                     onPress={handleSave}
                     disabled={loading}
@@ -239,5 +250,17 @@ const styles = StyleSheet.create({
         ...SHADOWS.medium
     },
     saveButtonDisabled: { opacity: 0.7 },
-    saveButtonText: { color: COLORS.white, fontSize: SIZES.lg, ...FONTS.bold }
+    saveButtonText: { color: COLORS.white, fontSize: SIZES.lg, ...FONTS.bold },
+    switchRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        backgroundColor: COLORS.surface,
+        borderWidth: 1,
+        borderColor: COLORS.border,
+        borderRadius: SIZES.radius_lg,
+        paddingHorizontal: 16,
+        paddingVertical: 12,
+        marginBottom: 20,
+    }
 });

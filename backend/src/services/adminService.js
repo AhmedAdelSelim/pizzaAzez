@@ -142,6 +142,19 @@ class AdminService {
         return activeUsers;
     }
 
+    async toggleMenuItemAvailability(itemId, is_available) {
+        return await menuItemRepository.update({ id: itemId }, { is_available });
+    }
+
+    async broadcastNotification(title, body) {
+        const users = await userRepository.find({});
+        const tokens = users.map(u => u.push_token).filter(t => !!t);
+        if (tokens.length === 0) return { sent: 0 };
+        const pushService = require('./pushService');
+        await pushService.sendNotification(tokens, title, body, {});
+        return { sent: tokens.length };
+    }
+
     async getDailyStats() {
         const orders = await orderRepository.find({});
         const dailyData = {};

@@ -2,6 +2,7 @@ const {
     authController,
     menuController,
     orderController,
+    reviewController,
     profileController,
     miscController,
     couponController,
@@ -22,6 +23,7 @@ async function routes(fastify, options) {
     fastify.get('/api/categories', menuController.getCategories);
     fastify.get('/api/menu', menuController.getMenu);
     fastify.get('/api/menu/:id', menuController.getMenuItem);
+    fastify.get('/api/menu/:id/reviews', reviewController.getReviews);
     fastify.get('/api/delivery-zones', miscController.getDeliveryZones);
     fastify.get('/api/stories', miscController.getStories);
     fastify.get('/api/flash-deals', flashDealController.getActiveDeals);
@@ -41,6 +43,10 @@ async function routes(fastify, options) {
         // Orders
         protectedFastify.post('/api/orders', orderController.placeOrder);
         protectedFastify.get('/api/orders', orderController.getOrders);
+        protectedFastify.put('/api/orders/:id/cancel', orderController.cancelOrder);
+
+        // Reviews
+        protectedFastify.post('/api/menu/:id/review', reviewController.addReview);
 
         // Profile
         protectedFastify.get('/api/profile', profileController.getProfile);
@@ -115,6 +121,12 @@ async function routes(fastify, options) {
             adminFastify.get('/api/admin/flash-deals', flashDealController.getAllDeals);
             adminFastify.post('/api/admin/flash-deals', flashDealController.createDeal);
             adminFastify.delete('/api/admin/flash-deals/:id', flashDealController.deleteDeal);
+
+            // Menu item availability toggle
+            adminFastify.put('/api/admin/menu/:id/availability', adminController.toggleMenuItemAvailability);
+
+            // Broadcast notification
+            adminFastify.post('/api/admin/broadcast', adminController.broadcastNotification);
         });
     });
 }

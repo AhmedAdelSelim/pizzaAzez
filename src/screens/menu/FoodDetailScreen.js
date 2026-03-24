@@ -1,13 +1,15 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
-    View, Text, StyleSheet, ScrollView, TouchableOpacity, StatusBar, Image, Animated,
+    View, Text, StyleSheet, ScrollView, TouchableOpacity, StatusBar, Image, Animated, TextInput, Alert,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, FONTS, SIZES, SHADOWS } from '../../theme/theme';
 import { useCart } from '../../context/CartContext';
+import { useAuth } from '../../context/AuthContext';
 import Button from '../../components/Button';
 import ReviewItem from '../../components/ReviewItem';
+import api from '../../services/api';
 
 const COMBO_OPTIONS = [
     { id: 'drink', label: 'مشروب غازي', price: 15, emoji: '🥤' },
@@ -19,11 +21,40 @@ const COMBO_OPTIONS = [
 export default function FoodDetailScreen({ navigation, route }) {
     const { item } = route.params;
     const { addItem } = useCart();
+    const { token } = useAuth();
     const [selectedSize, setSelectedSize] = useState(null);
     const [selectedExtras, setSelectedExtras] = useState([]);
     const [selectedCombos, setSelectedCombos] = useState([]);
     const [quantity, setQuantity] = useState(1);
     const [isAdded, setIsAdded] = useState(false);
+    const [reviews, setReviews] = useState([]);
+    const [reviewRating, setReviewRating] = useState(5);
+    const [reviewComment, setReviewComment] = useState('');
+    const [submittingReview, setSubmittingReview] = useState(false);
+    const [showReviewForm, setShowReviewForm] = useState(false);
+
+    useEffect(() => {
+        api.getItemReviews(item.id).then(data => {
+            if (Array.isArray(data)) setReviews(data);
+        }).catch(() => {});
+    }, [item.id]);
+
+    const handleSubmitReview = async () => {
+        if (!token) { Alert.alert('تنبيه', 'يجب تسجيل الدخول أولاً'); return; }
+        setSubmittingReview(true);
+        try {
+            const newReview = await api.addItemReview(item.id, reviewRating, reviewComment, token);
+            setReviews(prev => [newReview, ...prev]);
+            setReviewComment('');
+            setReviewRating(5);
+            setShowReviewForm(false);
+            Alert.alert('شكراً ✅', 'تم إرسال تقييمك بنجاح');
+        } catch (error) {
+            Alert.alert('خطأ', error.message);
+        } finally {
+            setSubmittingReview(false);
+        }
+    };
 
     const qtyScaleAnim = useRef(new Animated.Value(1)).current;
     const addBtnScaleAnim = useRef(new Animated.Value(1)).current;
@@ -243,20 +274,54 @@ export default function FoodDetailScreen({ navigation, route }) {
                 </View>
 
                 {/* Reviews */}
-                {Array.isArray(item.reviews) && item.reviews.length > 0 && (
-                    <View style={styles.section}>
-                        <View style={styles.sectionHeaderRow}>
-                            <Text style={styles.sectionTitle}>آراء العملاء</Text>
-                            <View style={styles.ratingBadge}>
-                                <Ionicons name="star" size={12} color={COLORS.star} />
-                                <Text style={styles.ratingAvg}>{item.rating}</Text>
-                            </View>
-                        </View>
-                        {item.reviews.map(review => (
-                            <ReviewItem key={review.id} review={review} />
-                        ))}
+                <View style={styles.section}>
+                    <View style={styles.sectionHeaderRow}>
+                        <Text style={styles.sectionTitle}>آراء العملاء</Text>
+                        <TouchableOpacity
+                            style={styles.addReviewBtn}
+                            onPress={() => setShowReviewForm(v => !v)}
+                        >
+                            <Ionicons name="star-outline" size={14} color={COLORS.primary} />
+                            <Text style={styles.addReviewBtnText}>أضف تقييم</Text>
+                        </TouchableOpacity>
                     </View>
-                )}
+
+                    {showReviewForm && (
+                        <View style={styles.reviewForm}>
+                            <View style={styles.starsRow}>
+                                {[1, 2, 3, 4, 5].map(star => (
+                                    <TouchableOpacity key={star} onPress={() => setReviewRating(star)}>
+                                        <Ionicons name={star <= reviewRating ? 'star' : 'star-outline'} size={28} color={COLORS.star} />
+                                    </TouchableOpacity>
+                                ))}
+                            </View>
+                            <TextInput
+                                style={styles.reviewInput}
+                                placeholder="اكتب رأيك هنا..."
+                                placeholderTextColor={COLORS.textMuted}
+                                value={reviewComment}
+                                onChangeText={setReviewComment}
+                                multiline
+                                textAlign="right"
+                            />
+                            <TouchableOpacity
+                                style={[styles.submitReviewBtn, submittingReview && { opacity: 0.6 }]}
+                                onPress={handleSubmitReview}
+                                disabled={submittingReview}
+                            >
+                                <Text style={styles.submitReviewText}>{submittingReview ? 'جاري الإرسال...' : 'إرسال التقييم'}</Text>
+                            </TouchableOpacity>
+                        </View>
+                    )}
+
+                    {reviews.length > 0 ? (
+                        reviews.map(review => (
+                            <ReviewItem key={review.id} review={review} />
+                        ))
+                    ) : (
+                        <Text style={styles.noReviewsText}>لا يوجد تقييمات بعد. كن أول من يقيّم!</Text>
+                    )}
+                </View>
 
                 <View style={{ height: 120 }} />
             </ScrollView>
@@ -592,4 +657,47 @@ const styles = StyleSheet.create({
     addButton: {
         flex: 1,
     },
+    addReviewBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+        backgroundColor: COLORS.primary + '15',
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: SIZES.radius_full,
+        borderWidth: 1,
+        borderColor: COLORS.primary + '30',
+    },
+    addReviewBtnText: { color: COLORS.primary, fontSize: SIZES.xs, ...FONTS.bold },
+    reviewForm: {
+        backgroundColor: COLORS.surface,
+        borderRadius: SIZES.radius_lg,
+        padding: SIZES.spacing_base,
+        marginBottom: 16,
+        gap: 12,
+        borderWidth: 1,
+        borderColor: COLORS.border,
+    },
+    starsRow: { flexDirection: 'row', gap: 8, justifyContent: 'center' },
+    reviewInput: {
+        backgroundColor: COLORS.background,
+        borderWidth: 1,
+        borderColor: COLORS.border,
+        borderRadius: SIZES.radius_md,
+        paddingHorizontal: 14,
+        paddingVertical: 10,
+        color: COLORS.text,
+        fontSize: SIZES.md,
+        ...FONTS.regular,
+        minHeight: 70,
+        textAlignVertical: 'top',
+    },
+    submitReviewBtn: {
+        backgroundColor: COLORS.primary,
+        borderRadius: SIZES.radius_lg,
+        paddingVertical: 12,
+        alignItems: 'center',
+    },
+    submitReviewText: { color: COLORS.white, fontSize: SIZES.base, ...FONTS.bold },
+    noReviewsText: { color: COLORS.textMuted, fontSize: SIZES.sm, ...FONTS.regular, textAlign: 'center', paddingVertical: 12 },
 });

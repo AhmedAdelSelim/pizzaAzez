@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, StatusBar, Alert, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, StatusBar, Alert, RefreshControl, Modal, TextInput } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, FONTS, SIZES, SHADOWS } from '../../theme/theme';
 import { useAuth } from '../../context/AuthContext';
@@ -9,6 +9,10 @@ export default function AdminDashboardScreen({ navigation }) {
     const { logout, token } = useAuth();
     const [stats, setStats] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [showBroadcast, setShowBroadcast] = useState(false);
+    const [broadcastTitle, setBroadcastTitle] = useState('');
+    const [broadcastBody, setBroadcastBody] = useState('');
+    const [broadcastLoading, setBroadcastLoading] = useState(false);
 
     const loadStats = async () => {
         try {
@@ -28,6 +32,25 @@ export default function AdminDashboardScreen({ navigation }) {
         });
         return unsubscribe;
     }, [navigation]);
+
+    const handleBroadcast = async () => {
+        if (!broadcastTitle.trim() || !broadcastBody.trim()) {
+            Alert.alert('تنبيه', 'يرجى إدخال العنوان والمحتوى');
+            return;
+        }
+        setBroadcastLoading(true);
+        try {
+            const result = await api.broadcastNotification(broadcastTitle.trim(), broadcastBody.trim(), token);
+            setShowBroadcast(false);
+            setBroadcastTitle('');
+            setBroadcastBody('');
+            Alert.alert('تم ✅', `تم إرسال الإشعار لـ ${result.sent} مستخدم`);
+        } catch (error) {
+            Alert.alert('خطأ', error.message);
+        } finally {
+            setBroadcastLoading(false);
+        }
+    };
 
     const handleLogout = () => {
         Alert.alert(
@@ -183,21 +206,75 @@ export default function AdminDashboardScreen({ navigation }) {
                 />
 
                 <Text style={styles.sectionTitle}>الإعدادات والخصومات</Text>
-                <MenuCard 
-                    title="إدارة الكوبونات" 
-                    subtitle="إدارة أكواد الخصم والعروض" 
-                    icon="ticket-outline" 
-                    screen="AdminCoupons" 
+                <MenuCard
+                    title="إدارة الكوبونات"
+                    subtitle="إدارة أكواد الخصم والعروض"
+                    icon="ticket-outline"
+                    screen="AdminCoupons"
                 />
-                <MenuCard 
-                    title="مناطق التوصيل" 
-                    subtitle="إدارة مناطق التوصيل وأسعار الشحن" 
-                    icon="map-outline" 
-                    screen="AdminDeliveryZones" 
+                <MenuCard
+                    title="مناطق التوصيل"
+                    subtitle="إدارة مناطق التوصيل وأسعار الشحن"
+                    icon="map-outline"
+                    screen="AdminDeliveryZones"
                 />
-                
+
+                <Text style={styles.sectionTitle}>التسويق</Text>
+                <TouchableOpacity
+                    style={[styles.card, { borderWidth: 1, borderColor: COLORS.primary + '30' }]}
+                    activeOpacity={0.8}
+                    onPress={() => setShowBroadcast(true)}
+                >
+                    <View style={[styles.iconContainer, { backgroundColor: 'rgba(232,93,44,0.15)' }]}>
+                        <Ionicons name="megaphone-outline" size={32} color={COLORS.primary} />
+                    </View>
+                    <View style={styles.cardTextContainer}>
+                        <Text style={styles.cardTitle}>إشعار جماعي</Text>
+                        <Text style={styles.cardSubtitle}>إرسال إشعار لجميع المستخدمين</Text>
+                    </View>
+                    <Ionicons name="chevron-back" size={24} color={COLORS.textMuted} />
+                </TouchableOpacity>
+
                 <View style={{ height: 100 }} />
             </ScrollView>
+        </View>
+
+            {/* Broadcast Modal */}
+            <Modal visible={showBroadcast} transparent animationType="slide" onRequestClose={() => setShowBroadcast(false)}>
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalContent}>
+                        <Text style={styles.modalTitle}>إرسال إشعار جماعي</Text>
+                        <TextInput
+                            style={styles.modalInput}
+                            placeholder="عنوان الإشعار"
+                            placeholderTextColor={COLORS.textMuted}
+                            value={broadcastTitle}
+                            onChangeText={setBroadcastTitle}
+                            textAlign="right"
+                        />
+                        <TextInput
+                            style={[styles.modalInput, { height: 80, textAlignVertical: 'top' }]}
+                            placeholder="محتوى الإشعار"
+                            placeholderTextColor={COLORS.textMuted}
+                            value={broadcastBody}
+                            onChangeText={setBroadcastBody}
+                            multiline
+                            textAlign="right"
+                        />
+                        <TouchableOpacity
+                            style={[styles.sendBtn, broadcastLoading && { opacity: 0.7 }]}
+                            onPress={handleBroadcast}
+                            disabled={broadcastLoading}
+                        >
+                            <Ionicons name="send-outline" size={18} color={COLORS.white} />
+                            <Text style={styles.sendBtnText}>{broadcastLoading ? 'جاري الإرسال...' : 'إرسال للجميع'}</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.cancelModalBtn} onPress={() => setShowBroadcast(false)}>
+                            <Text style={styles.cancelModalText}>إلغاء</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
         </View>
     );
 }
@@ -310,5 +387,39 @@ const styles = StyleSheet.create({
         color: COLORS.white,
         fontSize: 10,
         ...FONTS.bold,
-    }
+    },
+    modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' },
+    modalContent: {
+        backgroundColor: COLORS.surface,
+        borderTopLeftRadius: SIZES.radius_xxl,
+        borderTopRightRadius: SIZES.radius_xxl,
+        padding: SIZES.spacing_xl,
+        paddingBottom: 40,
+        gap: 12,
+    },
+    modalTitle: { color: COLORS.text, fontSize: SIZES.xl, ...FONTS.bold, textAlign: 'right', marginBottom: 4 },
+    modalInput: {
+        backgroundColor: COLORS.background,
+        borderWidth: 1,
+        borderColor: COLORS.border,
+        borderRadius: SIZES.radius_lg,
+        paddingHorizontal: 16,
+        paddingVertical: 12,
+        color: COLORS.text,
+        fontSize: SIZES.md,
+        ...FONTS.regular,
+    },
+    sendBtn: {
+        backgroundColor: COLORS.primary,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderRadius: SIZES.radius_xl,
+        paddingVertical: 14,
+        gap: 8,
+        marginTop: 4,
+    },
+    sendBtnText: { color: COLORS.white, fontSize: SIZES.base, ...FONTS.bold },
+    cancelModalBtn: { alignItems: 'center', paddingVertical: 10 },
+    cancelModalText: { color: COLORS.textMuted, fontSize: SIZES.base, ...FONTS.medium },
 });

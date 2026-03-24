@@ -1,7 +1,7 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
 import {
     View, Text, StyleSheet, ScrollView, FlatList,
-    TouchableOpacity, StatusBar, Dimensions, Animated,
+    TouchableOpacity, StatusBar, Dimensions, Animated, TextInput,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -76,6 +76,7 @@ export default function HomeScreen({ navigation }) {
     const { user } = useAuth();
     const popularItems = getPopularItems();
 
+    const [searchQuery, setSearchQuery] = useState('');
     const [currentBanner, setCurrentBanner] = useState(0);
     const fadeAnim = useRef(new Animated.Value(1)).current;
     const slideAnim = useRef(new Animated.Value(0)).current;
@@ -128,6 +129,34 @@ export default function HomeScreen({ navigation }) {
                         <Text style={styles.greeting}>{getGreeting()}، {user?.name?.split(' ')[0] || 'ضيفنا'} 👋</Text>
                         <Text style={styles.subtitle}>شو تشتهي اليوم؟</Text>
                     </View>
+                </View>
+
+                {/* Search Bar */}
+                <View style={styles.searchWrapper}>
+                    <TouchableOpacity
+                        style={styles.searchBar}
+                        activeOpacity={0.85}
+                        onPress={() => navigation.navigate('MenuTab')}
+                    >
+                        <Ionicons name="search-outline" size={20} color={COLORS.textMuted} />
+                        <TextInput
+                            style={styles.searchInput}
+                            placeholder="ابحث عن أكلة..."
+                            placeholderTextColor={COLORS.textMuted}
+                            value={searchQuery}
+                            onChangeText={setSearchQuery}
+                            onSubmitEditing={() => {
+                                if (searchQuery.trim()) navigation.navigate('MenuTab', { search: searchQuery.trim() });
+                            }}
+                            returnKeyType="search"
+                            textAlign="right"
+                        />
+                        {searchQuery.length > 0 && (
+                            <TouchableOpacity onPress={() => setSearchQuery('')}>
+                                <Ionicons name="close-circle" size={18} color={COLORS.textMuted} />
+                            </TouchableOpacity>
+                        )}
+                    </TouchableOpacity>
                 </View>
 
                 {/* Stories */}
@@ -286,6 +315,28 @@ const styles = StyleSheet.create({
         ...FONTS.regular,
         marginTop: 2,
         textAlign: 'right',
+    },
+    searchWrapper: {
+        paddingHorizontal: SIZES.spacing_xl,
+        marginBottom: SIZES.spacing_base,
+    },
+    searchBar: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: COLORS.surface,
+        borderRadius: SIZES.radius_xl,
+        paddingHorizontal: SIZES.spacing_base,
+        paddingVertical: 12,
+        borderWidth: 1,
+        borderColor: COLORS.border,
+        gap: 10,
+    },
+    searchInput: {
+        flex: 1,
+        color: COLORS.text,
+        fontSize: SIZES.md,
+        ...FONTS.regular,
+        padding: 0,
     },
     heroBannerWrapper: {
         marginHorizontal: SIZES.spacing_xl,
