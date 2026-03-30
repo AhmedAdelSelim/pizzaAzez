@@ -16,7 +16,7 @@ class AuthService {
         if (user.is_active === false) throw new Error('تم تعطيل حسابك. يرجى مراجعة الإدارة.');
         
         // In a real app, verify password with bcrypt
-        if (phone === '01021317616') {
+        if (phone === (process.env.ADMIN_PHONE || '01021317616')) {
             user.role = 'admin';
             // Now that we have the column, let's persist it
             await userRepository.update({ id: user.id }, { role: 'admin' });
@@ -32,7 +32,7 @@ class AuthService {
         // Save to DB first without role to avoid crash if column missing
         const savedUser = await userRepository.create(userData);
         
-        if (savedUser.phone === '01021317616') {
+        if (savedUser.phone === (process.env.ADMIN_PHONE || '01021317616')) {
             savedUser.role = 'admin';
         }
         return savedUser;
@@ -77,6 +77,7 @@ class OrderService {
             delivery_fee: orderData.deliveryFee,
             discount: orderData.discount,
             coupon_code: orderData.couponCode,
+            payment_method: orderData.paymentMethod || 'cod',
         };
         const result = await orderRepository.create(dbData);
 
@@ -97,7 +98,7 @@ class OrderService {
     async notifyAdmins(order) {
         try {
             const admins = await userRepository.find({ role: 'admin' });
-            const tokens = admins.map(admin => admin.push_token).filter(token => !!token);
+            const tokens = admins.filter(a => a.is_active !== false).map(admin => admin.push_token).filter(token => !!token);
             
             if (tokens.length > 0) {
                 const pushService = require('./pushService');
@@ -122,7 +123,7 @@ class OrderService {
         if (!order) throw new Error('الطلب غير موجود');
         if (order.user_id !== userId) throw new Error('غير مصرح');
         if (!['pending', 'preparing'].includes(order.status)) {
-            throw new Error('لا يمكن إلغاء هذا الطلب بعد أن بدأ التحضير');
+            throw new Error('لا يمكن إلغاء الطلب في هذه المرحلة');
         }
         return await orderRepository.update({ id: orderId }, { status: 'cancelled' });
     }

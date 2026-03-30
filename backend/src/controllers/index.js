@@ -44,15 +44,19 @@ const menuController = {
 };
 
 const orderController = {
-    async placeOrder(request) {
-        const loyaltyService = require('./loyaltyController') && require('../services/loyaltyService');
-        const order = await orderService.placeOrder({ ...request.body, user_id: request.user.id });
-        const points_earned = await loyaltyService.awardPoints(request.user.id, order.total).catch(() => 0);
-        return {
-            order,
-            estimatedTime: '٣٠-٤٥ دقيقة',
-            points_earned,
-        };
+    async placeOrder(request, reply) {
+        try {
+            const loyaltyService = require('../services/loyaltyService');
+            const order = await orderService.placeOrder({ ...request.body, user_id: request.user.id });
+            const points_earned = await loyaltyService.awardPoints(request.user.id, order.total).catch(() => 0);
+            return {
+                order,
+                estimatedTime: '٣٠-٤٥ دقيقة',
+                points_earned,
+            };
+        } catch (error) {
+            return reply.status(400).send({ message: error.message });
+        }
     },
 
     async getOrders(request) {
@@ -114,7 +118,7 @@ const miscController = {
         try {
             const { userRepository } = require('../repositories');
             const user = await userRepository.findOne({ id: request.user.id });
-            const isAdmin = user?.role === 'admin' || user?.phone === '01021317616';
+            const isAdmin = user?.role === 'admin' || user?.phone === (process.env.ADMIN_PHONE || '01021317616');
             const isVip = user?.vip_status === 'vip';
             if (!isAdmin && !isVip) {
                 return reply.status(403).send({ message: 'هذه الميزة متاحة لأعضاء VIP والمشرفين فقط' });

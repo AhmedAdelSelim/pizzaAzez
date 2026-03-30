@@ -45,7 +45,7 @@ async function routes(fastify, options) {
             const sseService = require('../services/sseService');
 
             const user = await userRepository.findOne({ id: request.user.id });
-            const isAdmin = user?.role === 'admin' || user?.phone === '01021317616';
+            const isAdmin = user?.role === 'admin' || user?.phone === (process.env.ADMIN_PHONE || '01021317616');
 
             const { stream, cleanup } = sseService.createStream(request.user.id, isAdmin);
 
@@ -106,7 +106,7 @@ async function routes(fastify, options) {
         protectedFastify.register(async function (adminFastify, opts) {
             adminFastify.addHook('onRequest', async (request, reply) => {
                 const user = await userRepository.findOne({ id: request.user.id });
-                if (user && user.phone === '01021317616') {
+                if (user && user.phone === (process.env.ADMIN_PHONE || '01021317616')) {
                     user.role = 'admin'; // Override role if it's the master admin
                 }
                 

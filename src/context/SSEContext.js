@@ -10,12 +10,10 @@ export function SSEProvider({ children }) {
     useEffect(() => {
         if (token) {
             sseClient.connect(token);
+            return () => sseClient.disconnect();
         } else {
             sseClient.disconnect();
         }
-        return () => {
-            sseClient.disconnect();
-        };
     }, [token]);
 
     return (

@@ -47,7 +47,7 @@ class FlashDealService {
 
     async notifyUsers(deal) {
         const users = await userRepository.find({});
-        const tokens = users.map(u => u.push_token).filter(Boolean);
+        const tokens = users.filter(u => u.is_active !== false).map(u => u.push_token).filter(Boolean);
         if (tokens.length === 0) return;
         const pushService = require('./pushService');
         await pushService.sendNotification(

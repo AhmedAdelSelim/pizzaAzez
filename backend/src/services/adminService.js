@@ -195,7 +195,7 @@ class AdminService {
 
     async broadcastNotification(title, body) {
         const users = await userRepository.find({});
-        const tokens = users.map(u => u.push_token).filter(t => !!t);
+        const tokens = users.filter(u => u.is_active !== false).map(u => u.push_token).filter(t => !!t);
         if (tokens.length === 0) return { sent: 0 };
         const pushService = require('./pushService');
         await pushService.sendNotification(tokens, title, body, {});

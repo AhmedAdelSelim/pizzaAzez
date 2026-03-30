@@ -47,7 +47,9 @@ export default function OrdersScreen({ navigation }) {
     // Real-time order status updates via SSE
     useEffect(() => {
         if (!sse) return;
-        const unsubscribe = sse.on('order_status', ({ orderId, status }) => {
+        const unsubscribe = sse.on('order_status', (data) => {
+            if (!data || !data.orderId || !data.status) return;
+            const { orderId, status } = data;
             setOrders(prev =>
                 prev.map(o => o.id === orderId ? { ...o, status } : o)
             );
