@@ -65,10 +65,8 @@ export function AuthProvider({ children }) {
                 const { user, token } = JSON.parse(stored);
                 dispatch({ type: 'RESTORE_TOKEN', payload: { user, token } });
                 
-                // If admin, register for push notifications
-                if (user.role === 'admin') {
-                    handlePushRegistration(user, token);
-                }
+                // Register every user for push notifications
+                handlePushRegistration(user, token);
             } else {
                 dispatch({ type: 'FINISH_RESTORE' });
             }
@@ -104,12 +102,8 @@ export function AuthProvider({ children }) {
             console.log('AuthContext: Storage updated, dispatching success');
             dispatch({ type: 'LOGIN_SUCCESS', payload: result });
             
-            // If admin, register for push notifications and redirect will happen via AppNavigator stack switch
-            if (result.user.role === 'admin') {
-                handlePushRegistration(result.user, result.token);
-            } else {
-                console.log('AuthContext: Regular user logged in');
-            }
+            // Register every user for push notifications
+            handlePushRegistration(result.user, result.token);
             
             return result;
         } catch (error) {
