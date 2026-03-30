@@ -1,4 +1,5 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import {
     View, Text, StyleSheet, ScrollView, FlatList,
     TouchableOpacity, StatusBar, Dimensions, Animated, TextInput,
@@ -80,6 +81,11 @@ export default function HomeScreen({ navigation }) {
     const [searchQuery, setSearchQuery] = useState('');
     const [recentlyViewed, setRecentlyViewed] = useState([]);
     const [currentBanner, setCurrentBanner] = useState(0);
+    const [storyRefreshKey, setStoryRefreshKey] = useState(0);
+
+    useFocusEffect(useCallback(() => {
+        setStoryRefreshKey(k => k + 1);
+    }, []));
 
     useEffect(() => {
         AsyncStorage.getItem('@pizzaAzez_recently_viewed').then(raw => {
@@ -171,6 +177,7 @@ export default function HomeScreen({ navigation }) {
                 <StoryBar
                     onStoryPress={(story) => navigation.navigate('StoryView', { storyId: story.id })}
                     onAddStory={() => navigation.navigate('CreateStory')}
+                    refreshKey={storyRefreshKey}
                 />
 
                 {/* AI Recommendations */}

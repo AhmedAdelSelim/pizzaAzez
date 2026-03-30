@@ -7,12 +7,14 @@ import { Ionicons } from '@expo/vector-icons';
 import { COLORS, FONTS, SIZES, SHADOWS } from '../../theme/theme';
 import { useAuth } from '../../context/AuthContext';
 import { useCart } from '../../context/CartContext';
+import { useSSE } from '../../context/SSEContext';
 import api from '../../services/api';
 import OrderJourneyTracker from '../../components/OrderJourneyTracker';
 
 export default function OrdersScreen({ navigation }) {
     const { token, ensureAuthenticated } = useAuth();
     const { addItem, clearCart } = useCart();
+    const sse = useSSE();
 
     useEffect(() => {
         ensureAuthenticated();
@@ -24,7 +26,7 @@ export default function OrdersScreen({ navigation }) {
     const fetchOrders = useCallback(async () => {
         try {
             const data = await api.getOrders(token);
-            setOrders(data);
+            setOrders(data.sort((a, b) => new Date(b.date) - new Date(a.date)));
         } catch (error) {
             console.error('Error fetching orders:', error);
         } finally {
@@ -36,13 +38,22 @@ export default function OrdersScreen({ navigation }) {
         fetchOrders();
     }, [fetchOrders]);
 
-    // Auto-refresh every 30s for active orders
+    // Auto-refresh every 30s as a fallback
     useEffect(() => {
-        const interval = setInterval(() => {
-            fetchOrders();
-        }, 30000);
+        const interval = setInterval(fetchOrders, 30000);
         return () => clearInterval(interval);
     }, [fetchOrders]);
+
+    // Real-time order status updates via SSE
+    useEffect(() => {
+        if (!sse) return;
+        const unsubscribe = sse.on('order_status', ({ orderId, status }) => {
+            setOrders(prev =>
+                prev.map(o => o.id === orderId ? { ...o, status } : o)
+            );
+        });
+        return unsubscribe;
+    }, [sse]);
 
     const getStatusConfig = (status) => {
         switch (status) {

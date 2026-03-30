@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { I18nManager } from 'react-native';
 import { AuthProvider } from './src/context/AuthContext';
+import { SSEProvider } from './src/context/SSEContext';
 import { CartProvider } from './src/context/CartContext';
 import { MenuProvider } from './src/context/MenuContext';
 import AppNavigator from './src/navigation/AppNavigator';
@@ -17,12 +18,14 @@ export default function App() {
   return (
     <ErrorBoundary>
       <AuthProvider>
-        <MenuProvider>
-          <CartProvider>
-            <NetworkGuard />
-            <AppNavigator />
-          </CartProvider>
-        </MenuProvider>
+        <SSEProvider>
+          <MenuProvider>
+            <CartProvider>
+              <NetworkGuard />
+              <AppNavigator />
+            </CartProvider>
+          </MenuProvider>
+        </SSEProvider>
       </AuthProvider>
     </ErrorBoundary>
   );

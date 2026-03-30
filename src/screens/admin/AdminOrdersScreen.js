@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, FlatList, TouchableOpacity, RefreshControl, Sta
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, FONTS, SIZES, SHADOWS } from '../../theme/theme';
 import { useAuth } from '../../context/AuthContext';
+import { useSSE } from '../../context/SSEContext';
 import api from '../../services/api';
 import SearchBar from '../../components/SearchBar';
 import { searchFilter } from '../../utils/searchUtils';
@@ -18,6 +19,7 @@ const STATUS_OPTIONS = [
 
 export default function AdminOrdersScreen({ navigation }) {
     const { token } = useAuth();
+    const sse = useSSE();
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
@@ -42,6 +44,17 @@ export default function AdminOrdersScreen({ navigation }) {
     useEffect(() => {
         loadOrders();
     }, []);
+
+    // Live updates via SSE: new order placed or an order's status changed
+    useEffect(() => {
+        if (!sse) return;
+        const unsubNewOrder = sse.on('new_order', () => loadOrders());
+        const unsubUpdated = sse.on('order_updated', () => loadOrders());
+        return () => {
+            unsubNewOrder();
+            unsubUpdated();
+        };
+    }, [sse]);
 
     const handleUpdateStatus = async (orderId, newStatus) => {
         try {

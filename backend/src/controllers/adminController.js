@@ -1,8 +1,12 @@
 const { adminService } = require('../services');
 
 const adminController = {
-    async getOrders() {
-        return await adminService.getOrders();
+    async getOrders(request, reply) {
+        try {
+            return await adminService.getOrders();
+        } catch (error) {
+            return reply.status(400).send({ message: error.message });
+        }
     },
 
     async updateOrderStatus(request, reply) {

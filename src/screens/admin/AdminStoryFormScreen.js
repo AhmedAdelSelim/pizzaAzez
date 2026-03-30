@@ -5,6 +5,7 @@ import { COLORS, FONTS, SIZES, SHADOWS } from '../../theme/theme';
 import { useAuth } from '../../context/AuthContext';
 import * as ImagePicker from 'expo-image-picker';
 import api from '../../services/api';
+import { uploadStoryImage } from '../../services/supabaseStorage';
 
 export default function AdminStoryFormScreen({ navigation, route }) {
     const { token } = useAuth();
@@ -34,15 +35,9 @@ export default function AdminStoryFormScreen({ navigation, route }) {
 
         try {
             setLoading(true);
-            const storyData = {
-                title,
-                image,
-                active,
-                // Assuming we also want to timestamp when it was created
-                created_at: new Date().toISOString()
-            };
-
-            await api.addStoryAdmin(storyData, token);
+            // Upload the local image to Supabase Storage first so all clients can load it
+            const publicUrl = await uploadStoryImage('admin', image);
+            await api.addStoryAdmin({ title, image: publicUrl, active }, token);
             Alert.alert('نجاح', 'تم إضافة القصة بنجاح!');
             navigation.goBack();
         } catch (error) {

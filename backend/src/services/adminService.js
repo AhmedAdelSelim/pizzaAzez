@@ -7,8 +7,19 @@ class AdminService {
 
     async updateOrderStatus(orderId, status) {
         const result = await orderRepository.update({ id: orderId }, { status });
-        // Notify the order owner
+        // Push notification to the order owner
         this.notifyOrderUser(result, status).catch(() => {});
+        // Real-time SSE event to the order owner
+        if (result.user_id) {
+            const sseService = require('./sseService');
+            sseService.sendToUser(result.user_id, 'order_status', {
+                orderId: result.id,
+                status,
+            });
+        }
+        // Notify all connected admins so their list refreshes too
+        const sseService = require('./sseService');
+        sseService.sendToAdmins('order_updated', { orderId: result.id, status });
         return result;
     }
 
@@ -35,8 +46,23 @@ class AdminService {
     }
 
     async addMenuItem(itemData) {
-        itemData.id = 'MItem_' + Date.now();
-        return await menuItemRepository.create(itemData);
+        const toNullIfEmpty = v => (v === '' || v === undefined) ? null : v;
+        const toIntOrNull   = v => { const n = parseInt(v); return isNaN(n) ? null : n; };
+
+        const item = {
+            id:               'MItem_' + Date.now(),
+            name:             itemData.name,
+            description:      toNullIfEmpty(itemData.description),
+            price:            parseFloat(itemData.price),
+            category_id:      itemData.category_id,
+            image:            toNullIfEmpty(itemData.image),
+            calories:         toIntOrNull(itemData.calories),
+            preparation_time: toNullIfEmpty(itemData.preparation_time),
+            is_available:     itemData.is_available !== false,
+            rating:           itemData.rating ?? 0,
+        };
+
+        return await menuItemRepository.create(item);
     }
 
     async updateMenuItem(itemId, updates) {
@@ -53,6 +79,7 @@ class AdminService {
 
     async addStory(storyData) {
         storyData.id = 'Story_' + Date.now();
+        storyData.created_at = new Date().toISOString();
         return await storyRepository.create(storyData);
     }
 

@@ -8,7 +8,7 @@ import { COLORS, FONTS, SIZES, SHADOWS } from '../theme/theme';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
 
-export default function StoryBar({ onStoryPress, onAddStory }) {
+export default function StoryBar({ onStoryPress, onAddStory, refreshKey }) {
     const { user } = useAuth();
     const canAddStory = user?.vip_status === 'vip' || user?.role === 'admin';
     const [stories, setStories] = useState([]);
@@ -16,7 +16,7 @@ export default function StoryBar({ onStoryPress, onAddStory }) {
 
     useEffect(() => {
         fetchStories();
-    }, []);
+    }, [refreshKey]);
 
     const fetchStories = async () => {
         try {
@@ -38,7 +38,8 @@ export default function StoryBar({ onStoryPress, onAddStory }) {
         );
     }
 
-    if (!stories.length) return null;
+    // Hide the bar only when there's nothing to show (no stories AND can't add one)
+    if (!stories.length && !canAddStory) return null;
 
     return (
         <View style={styles.container}>

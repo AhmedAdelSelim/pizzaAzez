@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, RefreshControl, StatusBar, Alert, TextInput } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { COLORS, FONTS, SIZES, SHADOWS } from '../../theme/theme';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
@@ -54,9 +55,9 @@ export default function AdminUsersScreen({ navigation }) {
             `هل أنت متأكد من ${actionText} هذا الحساب؟`,
             [
                 { text: 'إلغاء', style: 'cancel' },
-                { 
-                    text: 'تأكيد', 
-                    style: newStatus ? 'default' : 'destructive', 
+                {
+                    text: 'تأكيد',
+                    style: newStatus ? 'default' : 'destructive',
                     onPress: async () => {
                         try {
                             setLoading(true);
@@ -67,37 +68,89 @@ export default function AdminUsersScreen({ navigation }) {
                             Alert.alert('خطأ', error.message);
                             setLoading(false);
                         }
-                    } 
+                    }
                 }
             ]
         );
     };
 
+    const toggleVipStatus = async (userId, currentVipStatus) => {
+        const isVip = currentVipStatus === 'vip';
+        const actionText = isVip ? 'إلغاء VIP' : 'تفعيل VIP';
+
+        Alert.alert(
+            actionText,
+            isVip
+                ? 'هل تريد إلغاء عضوية VIP لهذا المستخدم؟'
+                : 'هل تريد تفعيل عضوية VIP لهذا المستخدم؟',
+            [
+                { text: 'إلغاء', style: 'cancel' },
+                {
+                    text: 'تأكيد',
+                    style: isVip ? 'destructive' : 'default',
+                    onPress: async () => {
+                        try {
+                            await api.handleVipRequest(userId, isVip ? 'none' : 'vip', token);
+                            loadUsers();
+                        } catch (error) {
+                            Alert.alert('خطأ', error.message);
+                        }
+                    },
+                },
+            ]
+        );
+    };
+
     const renderItem = ({ item }) => {
-        // Assume default True if undefined, to prevent bugging out on newly migrated missing rows
-        const isActive = item.is_active !== false; 
-        
+        const isActive = item.is_active !== false;
+        const isVip = item.vip_status === 'vip';
+        const isPending = item.vip_status === 'pending';
+
         return (
             <View style={styles.userCard}>
+                {/* User info */}
                 <View style={styles.cardInfo}>
-                    <Text style={styles.userName}>{item.name || 'بدون اسم'}</Text>
+                    <View style={styles.nameRow}>
+                        <Text style={styles.userName}>{item.name || 'بدون اسم'}</Text>
+                        {isVip && (
+                            <LinearGradient colors={['#FFD700', '#FFA000']} style={styles.vipBadge}>
+                                <Ionicons name="star" size={10} color="#fff" />
+                                <Text style={styles.vipBadgeText}>VIP</Text>
+                            </LinearGradient>
+                        )}
+                        {isPending && (
+                            <View style={styles.pendingBadge}>
+                                <Text style={styles.pendingBadgeText}>معلق</Text>
+                            </View>
+                        )}
+                    </View>
                     <Text style={styles.userPhone}>{item.phone}</Text>
-                    <Text style={styles.userRole}>الدور: {item.role === 'admin' ? 'مدير' : 'عميل'}</Text>
-                </View>
-                
-                <View style={[styles.statusBadge, isActive ? styles.statusActive : styles.statusInactive]}>
-                    <Text style={styles.statusText}>{isActive ? 'نشط' : 'معطل'}</Text>
+                    <Text style={styles.userRole}>
+                        {item.role === 'admin' ? 'مدير' : 'عميل'}
+                    </Text>
                 </View>
 
+                {/* Action buttons */}
                 {item.role !== 'admin' && (
-                    <TouchableOpacity 
-                        style={[styles.toggleBtn, isActive ? styles.toggleBtnInactive : styles.toggleBtnActive]}
-                        onPress={() => toggleUserStatus(item.id, isActive)}
-                    >
-                        <Text style={styles.toggleBtnText}>
-                            {isActive ? 'تعطيل' : 'تفعيل'}
-                        </Text>
-                    </TouchableOpacity>
+                    <View style={styles.actions}>
+                        {/* VIP toggle */}
+                        <TouchableOpacity
+                            style={[styles.actionBtn, isVip ? styles.btnRevokeVip : styles.btnGrantVip]}
+                            onPress={() => toggleVipStatus(item.id, item.vip_status)}
+                        >
+                            <Ionicons name={isVip ? 'star' : 'star-outline'} size={13} color={COLORS.white} />
+                            <Text style={styles.actionBtnText}>{isVip ? 'إلغاء VIP' : 'VIP'}</Text>
+                        </TouchableOpacity>
+
+                        {/* Active toggle */}
+                        <TouchableOpacity
+                            style={[styles.actionBtn, isActive ? styles.btnDeactivate : styles.btnActivate]}
+                            onPress={() => toggleUserStatus(item.id, isActive)}
+                        >
+                            <Ionicons name={isActive ? 'ban-outline' : 'checkmark-circle-outline'} size={13} color={COLORS.white} />
+                            <Text style={styles.actionBtnText}>{isActive ? 'تعطيل' : 'تفعيل'}</Text>
+                        </TouchableOpacity>
+                    </View>
                 )}
             </View>
         );
@@ -190,31 +243,44 @@ const styles = StyleSheet.create({
         backgroundColor: COLORS.surface,
         borderRadius: SIZES.radius_lg,
         padding: SIZES.spacing_md,
-        flexDirection: 'row-reverse',
-        alignItems: 'center',
-        ...SHADOWS.small
+        ...SHADOWS.small,
     },
-    cardInfo: { flex: 1, marginRight: 16, alignItems: 'flex-end' },
-    userName: { color: COLORS.text, fontSize: SIZES.md, ...FONTS.bold, textAlign: 'right' },
-    userPhone: { color: COLORS.textMuted, fontSize: SIZES.sm, ...FONTS.medium, marginTop: 4 },
+    cardInfo: { alignItems: 'flex-end', marginBottom: 12 },
+    nameRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: 8, marginBottom: 4 },
+    userName: { color: COLORS.text, fontSize: SIZES.md, ...FONTS.bold },
+    userPhone: { color: COLORS.textMuted, fontSize: SIZES.sm, ...FONTS.medium, marginTop: 2 },
     userRole: { color: COLORS.textMuted, fontSize: SIZES.xs, ...FONTS.regular, marginTop: 2 },
-    statusBadge: {
-        paddingHorizontal: 10,
-        paddingVertical: 4,
-        borderRadius: 12,
-        marginLeft: 10,
+    vipBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 3,
+        paddingHorizontal: 8,
+        paddingVertical: 3,
+        borderRadius: SIZES.radius_full,
     },
-    statusActive: { backgroundColor: 'rgba(76, 175, 80, 0.1)' },
-    statusInactive: { backgroundColor: 'rgba(244, 67, 54, 0.1)' },
-    statusText: { color: COLORS.text, fontSize: SIZES.xs, ...FONTS.bold },
-    toggleBtn: {
-        paddingHorizontal: 12,
-        paddingVertical: 8,
-        borderRadius: SIZES.radius_md,
+    vipBadgeText: { color: COLORS.white, fontSize: 10, ...FONTS.bold },
+    pendingBadge: {
+        backgroundColor: 'rgba(255,160,0,0.15)',
+        paddingHorizontal: 8,
+        paddingVertical: 3,
+        borderRadius: SIZES.radius_full,
+        borderWidth: 1,
+        borderColor: 'rgba(255,160,0,0.4)',
+    },
+    pendingBadgeText: { color: '#FFA000', fontSize: 10, ...FONTS.bold },
+    actions: { flexDirection: 'row-reverse', gap: 8 },
+    actionBtn: {
+        flex: 1,
+        flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
+        gap: 5,
+        paddingVertical: 9,
+        borderRadius: SIZES.radius_md,
     },
-    toggleBtnActive: { backgroundColor: COLORS.success },
-    toggleBtnInactive: { backgroundColor: COLORS.error },
-    toggleBtnText: { color: COLORS.white, fontSize: SIZES.sm, ...FONTS.bold }
+    actionBtnText: { color: COLORS.white, fontSize: SIZES.xs, ...FONTS.bold },
+    btnGrantVip: { backgroundColor: '#FFA000' },
+    btnRevokeVip: { backgroundColor: '#7B2FBE' },
+    btnActivate: { backgroundColor: COLORS.success || '#4CAF50' },
+    btnDeactivate: { backgroundColor: COLORS.error || '#F44336' },
 });

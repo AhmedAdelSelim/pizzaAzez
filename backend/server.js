@@ -13,6 +13,10 @@ fastify.register(routes);
 // --- Initialize Supabase ---
 connectDB();
 
+// --- Background jobs ---
+const { startCleanupJob } = require('./src/services/cleanupService');
+startCleanupJob();
+
 // Run the server
 const start = async () => {
     try {

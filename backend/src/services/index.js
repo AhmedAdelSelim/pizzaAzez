@@ -80,8 +80,16 @@ class OrderService {
         };
         const result = await orderRepository.create(dbData);
 
-        // Notify Admins
+        // Push notification to admins
         this.notifyAdmins(result).catch(err => console.error('Notification error:', err));
+
+        // Real-time SSE event to all connected admins
+        const sseService = require('./sseService');
+        sseService.sendToAdmins('new_order', {
+            orderId: result.id,
+            total: result.total,
+            phone: result.phone,
+        });
 
         return result;
     }
@@ -161,7 +169,17 @@ class MiscService {
     }
 
     async getStories() {
-        return await storyRepository.find({});
+        // Expired stories are removed by the hourly cleanup job (cleanupService.js).
+        // Only return stories created within the last 24 h as a safety filter.
+        const { getDb } = require('../config/db');
+        const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+        const db = getDb();
+        const { data, error } = await db
+            .from('stories')
+            .select('*')
+            .gte('created_at', cutoff);
+        if (error) throw new Error(error.message);
+        return data || [];
     }
 
     async createStory({ image, title, bg_colors, owner, owner_image }) {

@@ -40,6 +40,37 @@ async function routes(fastify, options) {
             }
         });
 
+        // Server-Sent Events stream (one persistent connection per client)
+        protectedFastify.get('/api/events', async (request, reply) => {
+            const sseService = require('../services/sseService');
+
+            const user = await userRepository.findOne({ id: request.user.id });
+            const isAdmin = user?.role === 'admin' || user?.phone === '01021317616';
+
+            const { stream, cleanup } = sseService.createStream(request.user.id, isAdmin);
+
+            reply
+                .type('text/event-stream')
+                .header('Cache-Control', 'no-cache')
+                .header('Connection', 'keep-alive')
+                .header('X-Accel-Buffering', 'no')
+                .send(stream);
+
+            // Confirm connection
+            stream.write('event: connected\ndata: {"status":"ok"}\n\n');
+
+            // Heartbeat every 25 s to keep the connection alive through proxies
+            const heartbeat = setInterval(() => {
+                try { stream.write(':heartbeat\n\n'); } catch { clearInterval(heartbeat); }
+            }, 25000);
+
+            request.raw.on('close', () => {
+                clearInterval(heartbeat);
+                cleanup();
+                stream.end();
+            });
+        });
+
         // Orders
         protectedFastify.post('/api/orders', orderController.placeOrder);
         protectedFastify.get('/api/orders', orderController.getOrders);
