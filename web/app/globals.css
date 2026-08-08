@@ -1,0 +1,321 @@
+@import "tailwindcss";
+
+/* ── Design tokens — mirrors the React Native theme (src/theme/theme.js) ──── */
+@theme {
+  --color-primary: #e85d2c;
+  --color-primary-light: #ff7b4f;
+  --color-primary-dark: #c44a1e;
+  --color-secondary: #f4a442;
+  --color-secondary-light: #ffb95e;
+  --color-background: #1a1a2e;
+  --color-background-light: #16213e;
+  --color-surface: #232946;
+  --color-surface-light: #2d3561;
+  --color-text: #fffffe;
+  --color-text-secondary: #eebbc3;
+  --color-muted: #8b8fa3;
+  --color-accent: #00c9a7;
+  --color-accent-light: #33d4b8;
+  --color-error: #ff6b6b;
+  --color-success: #00c9a7;
+  --color-warning: #f4a442;
+  --color-border: #3a3f5c;
+  --color-star: #ffd700;
+
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-2xl: 24px;
+
+  --shadow-sm-soft: 0 2px 4px rgba(0, 0, 0, 0.15);
+  --shadow-md-soft: 0 4px 8px rgba(0, 0, 0, 0.2);
+  --shadow-lg-soft: 0 8px 16px rgba(0, 0, 0, 0.3);
+
+  --font-sans: var(--font-cairo), system-ui, sans-serif;
+
+  /* Height of the fixed bottom tab bar. Any other bottom-anchored bar
+     (cart / checkout / item CTAs) offsets by this so it stacks above the
+     tabs instead of being covered by them. */
+  --spacing-tabbar: 4.75rem;
+}
+
+html,
+body {
+  height: 100%;
+  /* Tells the browser to draw native controls (date picker, calendar icon,
+     dropdowns) for a dark UI — without it the date icon renders near-black. */
+  color-scheme: dark;
+}
+
+body {
+  background: var(--color-background);
+  color: var(--color-text);
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior-y: none;
+}
+
+/*
+ * iOS Safari zooms the page whenever a focused field is smaller than 16px, and
+ * the user has to pinch back out. `max()` keeps anything already larger.
+ * Scoped to WebKit-on-touch so desktop type scales are untouched.
+ */
+@supports (-webkit-touch-callout: none) {
+  input,
+  select,
+  textarea {
+    font-size: max(16px, 1em);
+  }
+}
+
+/*
+ * Keeps bottom-anchored bars clear of the iPhone home indicator when the app is
+ * running standalone (added to home screen). In a normal browser tab the inset
+ * resolves to 0, so this changes nothing there.
+ */
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Thin, themed scrollbars */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border) transparent;
+}
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 999px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/*
+ * The app column, and every bottom-anchored bar that has to line up with it.
+ *
+ * Phone-width by default so small screens are untouched; on large screens it
+ * opens up rather than stranding a 768px column in the middle of a desktop.
+ * Defined once because AppShell and the cart/checkout/item CTA bars must agree
+ * — if they drift, the bars stop aligning with the content above them.
+ */
+.app-width {
+  margin-inline: auto;
+  width: 100%;
+  max-width: 48rem;
+}
+@media (min-width: 1024px) {
+  .app-width {
+    max-width: 72rem;
+  }
+}
+
+/* Horizontal rails (stories, categories) hide their scrollbar entirely */
+.no-scrollbar {
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/*
+ * Softens the hard cut where a horizontal rail runs past the viewport, so a
+ * half-visible chip reads as "more to scroll" instead of a clipping bug.
+ *
+ * The fade is the same width as the rail's own px-6 inset, so when the content
+ * fits and there is nothing to clip it lands on empty padding and is invisible.
+ */
+@utility edge-fade-x {
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent 0,
+    #000 1.5rem,
+    #000 calc(100% - 1.5rem),
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to right,
+    transparent 0,
+    #000 1.5rem,
+    #000 calc(100% - 1.5rem),
+    transparent 100%
+  );
+}
+
+@utility glow-primary {
+  box-shadow: 0 4px 12px rgba(232, 93, 44, 0.4);
+}
+
+/* ── Animations (replacements for RN Animated) ───────────────────────────── */
+@keyframes az-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes az-fade-slide {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+@keyframes az-rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes az-pulse-ring {
+  0% {
+    opacity: 0;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(1.18);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1);
+  }
+}
+@keyframes az-empty-pulse {
+  0%,
+  100% {
+    opacity: 0.4;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.15;
+    transform: scale(1.08);
+  }
+}
+@keyframes az-pop {
+  0% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.12);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+@keyframes az-vip-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 6px rgba(255, 215, 0, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 16px rgba(255, 215, 0, 0.9);
+  }
+}
+@keyframes az-stamp {
+  0% {
+    opacity: 0;
+    transform: scale(0.3);
+  }
+  70% {
+    transform: scale(1.1);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+@keyframes az-slide-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+@keyframes az-story-progress {
+  from {
+    width: 0%;
+  }
+  to {
+    width: 100%;
+  }
+}
+
+.animate-fade-in {
+  animation: az-fade-in 0.3s ease-out both;
+}
+.animate-fade-slide {
+  animation: az-fade-slide 0.4s ease-out both;
+}
+.animate-rise {
+  animation: az-rise 0.35s ease-out both;
+}
+.animate-pulse-ring {
+  animation: az-pulse-ring 1.4s ease-in-out infinite;
+}
+.animate-empty-pulse {
+  animation: az-empty-pulse 2.8s ease-in-out infinite;
+}
+.animate-pop {
+  animation: az-pop 0.3s ease-out;
+}
+.animate-vip-glow {
+  animation: az-vip-glow 2.2s ease-in-out infinite;
+}
+.animate-stamp {
+  animation: az-stamp 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+.animate-slide-up {
+  animation: az-slide-up 0.28s ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ── Shared primitives ───────────────────────────────────────────────────── */
+.az-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+}
+
+.az-input {
+  width: 100%;
+  background: var(--color-background-light);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 0.875rem 1rem;
+  color: var(--color-text);
+  font-size: 1rem;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+.az-input::placeholder {
+  color: var(--color-muted);
+}
+.az-input:focus {
+  border-color: var(--color-primary);
+}
+.az-input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

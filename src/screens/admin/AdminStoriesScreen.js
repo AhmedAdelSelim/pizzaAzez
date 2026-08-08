@@ -3,31 +3,21 @@ import { View, Text, StyleSheet, FlatList, TouchableOpacity, RefreshControl, Sta
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, FONTS, SIZES, SHADOWS } from '../../theme/theme';
 import { useAuth } from '../../context/AuthContext';
+import { useSSE } from '../../context/SSEContext';
 import api from '../../services/api';
 
 export default function AdminStoriesScreen({ navigation }) {
     const { token } = useAuth();
-    const [stories, setStories] = useState([]);
-    const [loading, setLoading] = useState(true);
-
-    const loadStories = async () => {
-        try {
-            setLoading(true);
-            const data = await api.getAdminStories(token);
-            setStories(data);
-        } catch (error) {
-            Alert.alert('خطأ', error.message);
-        } finally {
-            setLoading(false);
-        }
-    };
+    const sse = useSSE();
+    const [stories, setStories] = useState(() => sse.stories);
+    const [loading, setLoading] = useState(false);
 
     useEffect(() => {
-        const unsubscribe = navigation.addListener('focus', () => {
-            loadStories();
-        });
-        return unsubscribe;
-    }, [navigation]);
+        const unsubInit = sse.on('stories_init', (data) => setStories(data));
+        const unsubAdd  = sse.on('new_story',    (s)    => setStories(prev => [...prev, s]));
+        const unsubDel  = sse.on('story_deleted', ({ id }) => setStories(prev => prev.filter(s => s.id !== id)));
+        return () => { unsubInit(); unsubAdd(); unsubDel(); };
+    }, []);
 
     const handleDelete = (id) => {
         Alert.alert(
@@ -42,7 +32,6 @@ export default function AdminStoriesScreen({ navigation }) {
                         try {
                             await api.deleteStoryAdmin(id, token);
                             Alert.alert('نجاح', 'تم حذف القصة');
-                            loadStories();
                         } catch (error) {
                             Alert.alert('خطأ', error.message);
                         }
@@ -94,7 +83,7 @@ export default function AdminStoriesScreen({ navigation }) {
                 renderItem={renderItem}
                 keyExtractor={item => item.id}
                 contentContainerStyle={styles.listContainer}
-                refreshControl={<RefreshControl refreshing={loading} onRefresh={loadStories} tintColor={COLORS.primary} />}
+                refreshControl={<RefreshControl refreshing={loading} onRefresh={() => {}} tintColor={COLORS.primary} />}
                 ListEmptyComponent={
                     !loading && (
                         <View style={styles.emptyContainer}>

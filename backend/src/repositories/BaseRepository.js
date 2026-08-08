@@ -34,6 +34,18 @@ class BaseRepository {
         return this.findOne({ id });
     }
 
+    /**
+     * Rows whose `column` is any of `values` — one query instead of a lookup
+     * per id. Used to resolve a batch of foreign keys (order → customer name).
+     */
+    async findIn(column, values) {
+        const list = [...new Set(values)].filter(v => v !== null && v !== undefined);
+        if (!list.length) return [];
+        const { data, error } = await this._table().select('*').in(column, list);
+        if (error) throw new Error(error.message);
+        return data || [];
+    }
+
     async create(data) {
         const { data: result, error } = await this._table()
             .insert(data)

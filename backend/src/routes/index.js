@@ -13,8 +13,31 @@ const {
     flashDealController,
 } = require('../controllers');
 const { userRepository } = require('../repositories');
+const sseService = require('../services/sseService');
+
+/**
+ * Recursively drop `password` from anything on its way out.
+ *
+ * Services sanitize their own returns, but this is the backstop: a new endpoint
+ * that forgets to, or a nested user object inside some other payload, still
+ * can't leak a hash.
+ */
+function stripPasswords(value) {
+    if (Array.isArray(value)) return value.map(stripPasswords);
+    if (value && typeof value === 'object') {
+        const out = {};
+        for (const [key, nested] of Object.entries(value)) {
+            if (key === 'password') continue;
+            out[key] = stripPasswords(nested);
+        }
+        return out;
+    }
+    return value;
+}
 
 async function routes(fastify, options) {
+    fastify.addHook('preSerialization', async (request, reply, payload) => stripPasswords(payload));
+
     // Public Routes - Auth
     fastify.post('/api/auth/login', authController.login);
     fastify.post('/api/auth/register', authController.register);
@@ -40,35 +63,42 @@ async function routes(fastify, options) {
             }
         });
 
-        // Server-Sent Events stream (one persistent connection per client)
+        // ── Realtime stream ──────────────────────────────────────────────────
+        // Server-sent events. The client can't pick what it subscribes to — the
+        // token decides: everyone gets their own order updates and broadcasts,
+        // admins additionally get the admin feed.
         protectedFastify.get('/api/events', async (request, reply) => {
-            const sseService = require('../services/sseService');
-
             const user = await userRepository.findOne({ id: request.user.id });
-            const isAdmin = user?.role === 'admin' || user?.phone === (process.env.ADMIN_PHONE || '01021317616');
+            const isAdmin =
+                user?.role === 'admin' ||
+                user?.phone === (process.env.ADMIN_PHONE || '01021317616');
 
             const { stream, cleanup } = sseService.createStream(request.user.id, isAdmin);
 
+            // Close the stream when the client goes away, otherwise dead
+            // PassThroughs accumulate for the life of the worker.
+            request.raw.on('close', cleanup);
+
             reply
-                .type('text/event-stream')
-                .header('Cache-Control', 'no-cache')
+                .header('Content-Type', 'text/event-stream')
+                .header('Cache-Control', 'no-cache, no-transform')
                 .header('Connection', 'keep-alive')
-                .header('X-Accel-Buffering', 'no')
-                .send(stream);
+                // Nginx buffers text/event-stream by default, which stalls delivery.
+                .header('X-Accel-Buffering', 'no');
 
-            // Confirm connection
-            stream.write('event: connected\ndata: {"status":"ok"}\n\n');
+            stream.write(`event: connected\ndata: ${JSON.stringify({ ok: true })}\n\n`);
 
-            // Heartbeat every 25 s to keep the connection alive through proxies
+            // Comment lines keep intermediaries from timing the socket out.
             const heartbeat = setInterval(() => {
-                try { stream.write(':heartbeat\n\n'); } catch { clearInterval(heartbeat); }
+                try {
+                    stream.write(': ping\n\n');
+                } catch {
+                    clearInterval(heartbeat);
+                }
             }, 25000);
+            request.raw.on('close', () => clearInterval(heartbeat));
 
-            request.raw.on('close', () => {
-                clearInterval(heartbeat);
-                cleanup();
-                stream.end();
-            });
+            return reply.send(stream);
         });
 
         // Orders
@@ -88,6 +118,7 @@ async function routes(fastify, options) {
 
         // Stories (VIP + Admin)
         protectedFastify.post('/api/stories', miscController.createStory);
+        protectedFastify.get('/api/stories/quota', miscController.getStoryQuota);
 
         // Suggestions
         protectedFastify.post('/api/suggestions', suggestionController.createSuggestion);
@@ -129,6 +160,7 @@ async function routes(fastify, options) {
 
             adminFastify.get('/api/admin/users', adminController.getUsers);
             adminFastify.put('/api/admin/users/:id/status', adminController.updateUserStatus);
+            adminFastify.post('/api/admin/users/:id/story-credits', adminController.grantStoryCredits);
 
             adminFastify.get('/api/admin/categories', adminController.getCategories);
             adminFastify.post('/api/admin/categories', adminController.addCategory);

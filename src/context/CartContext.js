@@ -133,7 +133,7 @@ export function CartProvider({ children }) {
         if (!state.selectedZone) return 0;
         const subtotal = getSubtotal();
         // Keep "Free over 200" rule but apply it to the zone price
-        return subtotal > 200 ? 0 : state.selectedZone.price;
+        return subtotal > 1000 ? 0 : state.selectedZone.price;
     };
 
     const getDiscount = () => {

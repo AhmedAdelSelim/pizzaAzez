@@ -1,24 +1,39 @@
 const { orderRepository, menuItemRepository, storyRepository, userRepository, categoryRepository, couponRepository, deliveryZoneRepository } = require('../repositories');
+const sseService = require('./sseService');
+const { ORDER_STATUS, isValidStatus } = require('../constants/orderStatus');
+const { attachCustomerNames } = require('../utils/customerName');
 
 class AdminService {
     async getOrders() {
-        return await orderRepository.find({});
+        const orders = await orderRepository.find({});
+        return await attachCustomerNames(orders);
     }
 
     async updateOrderStatus(orderId, status) {
+        if (!isValidStatus(status)) throw new Error('حالة الطلب غير صالحة');
+
+        const existing = await orderRepository.findOne({ id: orderId });
+        if (!existing) throw new Error('الطلب غير موجود');
+        if (existing.status === status) return existing;
+
+        // A finished order is finished — reopening a delivered or cancelled
+        // order would resurrect it on the customer's screen.
+        if ([ORDER_STATUS.DELIVERED, ORDER_STATUS.CANCELLED].includes(existing.status)) {
+            throw new Error('لا يمكن تعديل حالة طلب منتهٍ');
+        }
+
         const result = await orderRepository.update({ id: orderId }, { status });
         // Push notification to the order owner
         this.notifyOrderUser(result, status).catch(() => {});
-        // Real-time SSE event to the order owner
+        // Real-time event to the order owner
         if (result.user_id) {
-            const sseService = require('./sseService');
             sseService.sendToUser(result.user_id, 'order_status', {
                 orderId: result.id,
                 status,
+                order: result,
             });
         }
         // Notify all connected admins so their list refreshes too
-        const sseService = require('./sseService');
         sseService.sendToAdmins('order_updated', { orderId: result.id, status });
         return result;
     }
@@ -88,7 +103,15 @@ class AdminService {
     }
 
     async getUsers() {
-        return await userRepository.find({});
+        const users = await userRepository.find({});
+        // Attach the derived story quota so the admin list doesn't have to
+        // reimplement month-rollover rules client-side.
+        const storyQuotaService = require('./storyQuotaService');
+        const { sanitizeUser } = require('../utils/sanitizeUser');
+        return users.map((user) => ({
+            ...sanitizeUser(user),
+            story_quota: storyQuotaService.getQuota(user),
+        }));
     }
 
     async updateUserStatus(userId, isActive) {
@@ -165,7 +188,10 @@ class AdminService {
             if (!userStats[identifier]) {
                 userStats[identifier] = {
                     count: 0,
-                    name: order.customer_name || 'عميل',
+                    // getStats() reads raw order rows, which carry no
+                    // customer_name — the real name is resolved from allUsers
+                    // below, and this only covers an order whose account is gone.
+                    name: 'عميل',
                     phone: order.phone || '-'
                 };
             }

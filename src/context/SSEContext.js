@@ -1,27 +1,27 @@
 import React, { createContext, useContext, useEffect } from 'react';
 import { useAuth } from './AuthContext';
-import sseClient from '../services/sseClient';
+import partyKitClient from '../services/partyKitClient';
 
-const SSEContext = createContext(sseClient);
+const SSEContext = createContext(partyKitClient);
 
 export function SSEProvider({ children }) {
-    const { token } = useAuth();
+    const { token, user } = useAuth();
 
     useEffect(() => {
-        if (token) {
-            sseClient.connect(token);
-            return () => sseClient.disconnect();
+        if (token && user?.id) {
+            const isAdmin = user.role === 'admin';
+            partyKitClient.connect(user.id, isAdmin);
+            return () => partyKitClient.disconnect();
         } else {
-            sseClient.disconnect();
+            partyKitClient.disconnect();
         }
-    }, [token]);
+    }, [token, user?.id]);
 
     return (
-        <SSEContext.Provider value={sseClient}>
+        <SSEContext.Provider value={partyKitClient}>
             {children}
         </SSEContext.Provider>
     );
 }
 
-/** Returns the singleton SSEClient so components can call .on()/.off(). */
 export const useSSE = () => useContext(SSEContext);

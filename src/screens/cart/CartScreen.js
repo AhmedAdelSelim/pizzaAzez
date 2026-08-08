@@ -12,7 +12,7 @@ import EmptyState from '../../components/EmptyState';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
 
-const FREE_DELIVERY_THRESHOLD = 200;
+const FREE_DELIVERY_THRESHOLD = 1000;
 
 export default function CartScreen({ navigation }) {
     const {

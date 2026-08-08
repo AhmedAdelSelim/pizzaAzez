@@ -8,13 +8,27 @@ import { COLORS, FONTS, SIZES, SHADOWS } from '../../theme/theme';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
 
+/**
+ * An entry either navigates (`route`) or explains itself (`note`).
+ *
+ * Three rows used to do nothing at all when tapped. The address one now has a
+ * real destination — EditProfile grew a delivery-address field — and payment
+ * says what it can, since cash on delivery is the only method the app supports.
+ */
 const MENU_ITEMS_LIST = [
     { icon: 'person-outline', label: 'تعديل الملف الشخصي', route: 'EditProfile' },
     { icon: 'time-outline', label: 'سجل الطلبات', route: 'Orders' },
     { icon: 'heart-outline', label: 'المفضلة', route: 'Favorites' },
-    { icon: 'location-outline', label: 'عناوين التوصيل' },
-    { icon: 'card-outline', label: 'طريقة الدفع' },
-    { icon: 'help-circle-outline', label: 'المساعدة والدعم' },
+    { icon: 'location-outline', label: 'عناوين التوصيل', route: 'EditProfile' },
+    {
+        icon: 'card-outline',
+        label: 'طريقة الدفع',
+        note: {
+            title: 'طريقة الدفع',
+            message: 'الدفع عند الاستلام نقداً هو الطريقة الوحيدة المتاحة حالياً.',
+        },
+    },
+    { icon: 'help-circle-outline', label: 'المساعدة والدعم', route: 'About' },
     { icon: 'bulb-outline', label: 'الاقتراحات والشكاوي', route: 'Suggestions' },
     { icon: 'information-circle-outline', label: 'عن التطبيق', route: 'About' },
 ];
@@ -65,6 +79,13 @@ export default function ProfileScreen({ navigation }) {
             api.getLoyaltyPoints(token).then(d => setLoyaltyPoints(d.points || 0)).catch(() => {});
         }
     }, []);
+
+    React.useEffect(() => {
+        const unsubscribe = navigation.addListener('focus', () => {
+            if (token) refreshProfile();
+        });
+        return unsubscribe;
+    }, [navigation, token]);
 
     const [referralStats, setReferralStats] = React.useState(null);
 
@@ -240,7 +261,10 @@ export default function ProfileScreen({ navigation }) {
                                 index < MENU_ITEMS_LIST.length - 1 && styles.menuItemBorder,
                             ]}
                             activeOpacity={0.6}
-                            onPress={() => item.route && navigation.navigate(item.route)}
+                            onPress={() => {
+                                if (item.route) navigation.navigate(item.route);
+                                else if (item.note) Alert.alert(item.note.title, item.note.message);
+                            }}
                         >
                             <View style={styles.menuIconContainer}>
                                 <Ionicons name={item.icon} size={20} color={COLORS.primary} />

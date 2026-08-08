@@ -21,6 +21,9 @@ expo-env.d.ts
 # Metro
 .metro-health-check*
 
+# PartyKit local dev state (durable object sqlite)
+.partykit/
+
 # debug
 npm-debug.*
 yarn-debug.*

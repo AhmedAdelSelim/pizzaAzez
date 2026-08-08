@@ -1,4 +1,10 @@
 const { authService, menuService, orderService, reviewService, profileService, miscService, couponService } = require('../services');
+const sseService = require('../services/sseService');
+const storyQuotaService = require('../services/storyQuotaService');
+
+/** The master admin phone is treated as an admin even if the row says otherwise. */
+const isAdminUser = (user) =>
+    user?.role === 'admin' || user?.phone === (process.env.ADMIN_PHONE || '01021317616');
 
 const authController = {
     async login(request, reply) {
@@ -114,26 +120,75 @@ const miscController = {
         return await miscService.getStories();
     },
 
+    async getStoryQuota(request, reply) {
+        try {
+            const { userRepository } = require('../repositories');
+            const user = await userRepository.findOne({ id: request.user.id });
+            if (!user) return reply.status(404).send({ message: 'المستخدم غير موجود' });
+
+            // Admins post without limit, so report an unlimited quota rather
+            // than a number the UI would count down.
+            if (isAdminUser(user)) {
+                return { unlimited: true, vipActive: true, remaining: null, used: 0, limit: null, bonus: 0 };
+            }
+            return { unlimited: false, ...storyQuotaService.getQuota(user) };
+        } catch (error) {
+            return reply.status(400).send({ message: error.message });
+        }
+    },
+
     async createStory(request, reply) {
         try {
             const { userRepository } = require('../repositories');
             const user = await userRepository.findOne({ id: request.user.id });
-            const isAdmin = user?.role === 'admin' || user?.phone === (process.env.ADMIN_PHONE || '01021317616');
-            const isVip = user?.vip_status === 'vip';
-            if (!isAdmin && !isVip) {
-                return reply.status(403).send({ message: 'هذه الميزة متاحة لأعضاء VIP والمشرفين فقط' });
+            if (!user) return reply.status(404).send({ message: 'المستخدم غير موجود' });
+
+            const isAdmin = isAdminUser(user);
+            const quota = storyQuotaService.getQuota(user);
+
+            if (!isAdmin) {
+                if (user.vip_status !== 'vip') {
+                    return reply.status(403).send({
+                        message: 'هذه الميزة متاحة لأعضاء VIP والمشرفين فقط',
+                    });
+                }
+                // Subscription lapsed — drop the badge so the rest of the app
+                // stops treating them as VIP, then refuse the post.
+                if (!quota.vipActive) {
+                    await userRepository.update({ id: user.id }, { vip_status: 'none' });
+                    return reply.status(403).send({
+                        message: 'انتهى اشتراكك الشهري في VIP. يرجى التجديد للاستمرار في نشر القصص.',
+                        code: 'VIP_EXPIRED',
+                    });
+                }
+                if (quota.remaining <= 0) {
+                    return reply.status(403).send({
+                        message: `لقد استخدمت ${quota.limit} قصص هذا الشهر. للحصول على قصص إضافية يرجى التواصل مع الإدارة.`,
+                        code: 'STORY_QUOTA_EXCEEDED',
+                        quota,
+                    });
+                }
             }
+
             const { image, title, bg_colors } = request.body;
             if (!image && !title) {
                 return reply.status(400).send({ message: 'يرجى إرسال صورة أو نص' });
             }
-            return await miscService.createStory({
-                image: image || null,
-                title: title || null,
-                bg_colors: bg_colors || null,
+
+            const story = await miscService.createStory({
+                image,
+                title,
+                bg_colors,
                 owner: user.name,
                 owner_image: user.image || null,
+                user_id: user.id,
             });
+
+            // Only bill the quota once the story is safely stored.
+            if (!isAdmin) await storyQuotaService.consume(user);
+
+            sseService.sendToAll('new_story', story);
+            return story;
         } catch (error) {
             return reply.status(400).send({ message: error.message });
         }

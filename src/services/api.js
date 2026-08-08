@@ -1,5 +1,5 @@
 // Updated API service to talk to the Fastify backend
-const BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://192.168.1.29:3000/api';
+const BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://192.168.1.4:3000/api';
 
 const api = {
     async login(phone, password) {

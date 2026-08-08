@@ -41,7 +41,13 @@ if (cluster.isPrimary) {
     const config = require('./src/config');
     const routes = require('./src/routes');
 
-    fastify.register(require('@fastify/cors'), { origin: true });
+    // @fastify/cors v11 defaults `methods` to GET,HEAD,POST — without listing
+    // the rest, every PUT/PATCH/DELETE from the web app dies at the preflight.
+    fastify.register(require('@fastify/cors'), {
+        origin: true,
+        methods: ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+        allowedHeaders: ['Content-Type', 'Authorization'],
+    });
     fastify.register(require('@fastify/jwt'), { secret: config.JWT_SECRET });
     fastify.register(routes);
 

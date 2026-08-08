@@ -114,7 +114,7 @@ export default function OrdersScreen({ navigation }) {
                                 image: item.image || null,
                             });
                         });
-                        navigation.navigate('CartTab');
+                        navigation.navigate('HomeTabs', { screen: 'CartTab' });
                     },
                 },
             ]
@@ -222,7 +222,10 @@ export default function OrdersScreen({ navigation }) {
                                         الإجمالي: <Text style={styles.totalValue}>{item.total} ج.م</Text>
                                     </Text>
                                     <View style={styles.footerActions}>
-                                        {['pending', 'preparing'].includes(item.status) && (
+                                        {/* Only a not-yet-started order can be withdrawn — mirrors
+                                            isCancellable() on the server, which rejects anything past
+                                            'pending'. Offering it on 'preparing' just raises an error. */}
+                                        {item.status === 'pending' && (
                                             <TouchableOpacity
                                                 style={styles.cancelButton}
                                                 onPress={() => handleCancelOrder(item)}

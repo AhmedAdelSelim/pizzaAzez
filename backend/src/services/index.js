@@ -8,34 +8,91 @@ const {
     couponRepository,
     reviewRepository,
 } = require('../repositories');
+const sseService = require('./sseService');
+const { ORDER_STATUS, isCancellable } = require('../constants/orderStatus');
+const { hash: hashPassword, verify: verifyPassword } = require('../utils/password');
+const { sanitizeUser } = require('../utils/sanitizeUser');
+const { validateUsername } = require('../utils/username');
+
+/**
+ * Case-insensitive username lookup.
+ *
+ * The repository's `.eq` is case-sensitive, and the unique index is on
+ * `lower(username)` — so a plain equality check would let "Ahmed" through when
+ * "ahmed" exists, only for the insert to fail with a raw Postgres error.
+ * This exists to produce a readable message; the index is still the real guard
+ * against a race between two simultaneous signups.
+ */
+async function isUsernameTaken(username) {
+    const { getDb } = require('../config/db');
+    const { data, error } = await getDb()
+        .from('users')
+        .select('id')
+        .ilike('username', username)
+        .limit(1);
+    if (error) throw new Error(error.message);
+    return (data || []).length > 0;
+}
+const { attachCustomerName } = require('../utils/customerName');
 
 class AuthService {
     async login(phone, password) {
         const user = await userRepository.findOne({ phone });
-        if (!user) throw new Error('رقم الهاتف أو كلمة المرور غير صحيحة');
+
+        // Same message whether the phone is unknown or the password is wrong,
+        // so the response can't be used to enumerate registered numbers.
+        const invalid = new Error('رقم الهاتف أو كلمة المرور غير صحيحة');
+        if (!user) throw invalid;
+
+        const { ok, needsUpgrade } = await verifyPassword(password, user.password);
+        if (!ok) throw invalid;
+
+        // Checked after the password so a wrong guess can't reveal that an
+        // account exists but is suspended.
         if (user.is_active === false) throw new Error('تم تعطيل حسابك. يرجى مراجعة الإدارة.');
-        
-        // In a real app, verify password with bcrypt
-        if (phone === (process.env.ADMIN_PHONE || '01021317616')) {
-            user.role = 'admin';
-            // Now that we have the column, let's persist it
-            await userRepository.update({ id: user.id }, { role: 'admin' });
+
+        const updates = {};
+
+        // Quietly replace a legacy plaintext password with a real hash now that
+        // we have the cleartext in hand and know it is correct.
+        if (needsUpgrade) updates.password = await hashPassword(password);
+
+        if (phone === (process.env.ADMIN_PHONE || '01021317616') && user.role !== 'admin') {
+            updates.role = 'admin';
         }
-        return user;
+
+        if (Object.keys(updates).length) {
+            await userRepository.update({ id: user.id }, updates);
+            Object.assign(user, updates);
+        }
+        if (phone === (process.env.ADMIN_PHONE || '01021317616')) user.role = 'admin';
+
+        return sanitizeUser(user);
     }
 
     async register(userData) {
         const existing = await userRepository.findOne({ phone: userData.phone });
         if (existing) throw new Error('رقم الهاتف مسجل بالفعل');
-        userData.id = 'user_' + Date.now();
-        
-        // Save to DB first without role to avoid crash if column missing
-        const savedUser = await userRepository.create(userData);
-        
+
+        if (!userData.password) throw new Error('كلمة المرور مطلوبة');
+
+        const username = validateUsername(userData.username);
+        if (!username.ok) throw new Error(username.message);
+        if (await isUsernameTaken(username.value)) {
+            throw new Error('اسم المستخدم مستخدم بالفعل');
+        }
+
+        const savedUser = await userRepository.create({
+            ...userData,
+            username: username.value,
+            id: 'user_' + Date.now(),
+            password: await hashPassword(userData.password),
+        });
+
         if (savedUser.phone === (process.env.ADMIN_PHONE || '01021317616')) {
             savedUser.role = 'admin';
         }
-        return savedUser;
+        return sanitizeUser(savedUser);
     }
 }
 
@@ -59,9 +116,25 @@ class MenuService {
 
 class OrderService {
     async placeOrder(orderData) {
+        // A delivery order the kitchen can't deliver is worthless, and until now
+        // nothing stopped one being created — the web form checked, but the API
+        // did not, so any other client could omit these.
+        const address = String(orderData.address || '').trim();
+        const phone = String(orderData.phone || '').trim();
+        if (!Array.isArray(orderData.items) || orderData.items.length === 0) {
+            throw new Error('لا توجد أصناف في الطلب');
+        }
+        if (!address) throw new Error('العنوان مطلوب لإتمام الطلب');
+        if (!phone) throw new Error('رقم الهاتف مطلوب لإتمام الطلب');
+        orderData.address = address;
+        orderData.phone = phone;
+
         orderData.id = 'ORD-' + Math.random().toString(36).substr(2, 9).toUpperCase();
         orderData.date = new Date().toISOString().split('T')[0];
-        orderData.status = 'preparing';
+        // A new order starts as received. Only an admin moves it forward from
+        // here (see adminService.updateOrderStatus).
+        orderData.status = ORDER_STATUS.RECEIVED;
+        const paymentMethod = orderData.paymentMethod || 'cod';
         // Map camelCase fields to snake_case for the DB
         const dbData = {
             id: orderData.id,
@@ -77,20 +150,20 @@ class OrderService {
             delivery_fee: orderData.deliveryFee,
             discount: orderData.discount,
             coupon_code: orderData.couponCode,
-            payment_method: orderData.paymentMethod || 'cod',
         };
-        const result = await orderRepository.create(dbData);
+        const created = await orderRepository.create(dbData);
+        // The admin list prepends this payload as-is, so it has to carry the
+        // customer name the same way a fetched order does — otherwise a live
+        // order shows no name until the next refresh.
+        const result = await attachCustomerName(created);
+        result.payment_method = paymentMethod;
 
         // Push notification to admins
         this.notifyAdmins(result).catch(err => console.error('Notification error:', err));
 
-        // Real-time SSE event to all connected admins
-        const sseService = require('./sseService');
-        sseService.sendToAdmins('new_order', {
-            orderId: result.id,
-            total: result.total,
-            phone: result.phone,
-        });
+        // Real-time event to all connected admins — send the full order so the
+        // admin screen can prepend it without a refetch.
+        sseService.sendToAdmins('new_order', result);
 
         return result;
     }
@@ -122,10 +195,25 @@ class OrderService {
         const order = await orderRepository.findOne({ id: orderId });
         if (!order) throw new Error('الطلب غير موجود');
         if (order.user_id !== userId) throw new Error('غير مصرح');
-        if (!['pending', 'preparing'].includes(order.status)) {
-            throw new Error('لا يمكن إلغاء الطلب في هذه المرحلة');
+
+        // Once the kitchen has started, the food is already being made — the
+        // customer can no longer pull it back. Enforced here rather than in the
+        // UI so a crafted request can't bypass it.
+        if (!isCancellable(order.status)) {
+            throw new Error('لا يمكن إلغاء الطلب بعد بدء التحضير. يرجى الاتصال بالإدارة.');
         }
-        return await orderRepository.update({ id: orderId }, { status: 'cancelled' });
+
+        const result = await orderRepository.update(
+            { id: orderId },
+            { status: ORDER_STATUS.CANCELLED }
+        );
+
+        // Admin dashboards should drop it from the active list immediately.
+        sseService.sendToAdmins('order_updated', {
+            orderId: result.id,
+            status: ORDER_STATUS.CANCELLED,
+        });
+        return result;
     }
 }
 
@@ -156,11 +244,30 @@ class ReviewService {
 
 class ProfileService {
     async getProfile(userId) {
-        return await userRepository.findOne({ id: userId });
+        return sanitizeUser(await userRepository.findOne({ id: userId }));
     }
 
     async updateProfile(userId, updates) {
-        return await userRepository.update({ id: userId }, updates);
+        const safeUpdates = { ...updates };
+
+        // Never let a client promote itself or hand over an unhashed password.
+        delete safeUpdates.id;
+        delete safeUpdates.role;
+        // Changing a username needs the same format and uniqueness checks that
+        // registration runs, so it is not editable through this endpoint.
+        delete safeUpdates.username;
+        delete safeUpdates.vip_status;
+        delete safeUpdates.vip_expires_at;
+        delete safeUpdates.stories_used;
+        delete safeUpdates.bonus_story_credits;
+
+        if (safeUpdates.password) {
+            safeUpdates.password = await hashPassword(safeUpdates.password);
+        } else {
+            delete safeUpdates.password;
+        }
+
+        return sanitizeUser(await userRepository.update({ id: userId }, safeUpdates));
     }
 }
 
@@ -178,12 +285,13 @@ class MiscService {
         const { data, error } = await db
             .from('stories')
             .select('*')
-            .gte('created_at', cutoff);
+            .gte('created_at', cutoff)
+            .eq('active', true);
         if (error) throw new Error(error.message);
         return data || [];
     }
 
-    async createStory({ image, title, bg_colors, owner, owner_image }) {
+    async createStory({ image, title, bg_colors, owner, owner_image, user_id }) {
         return await storyRepository.create({
             id: 'Story_' + Date.now(),
             image: image || null,
@@ -191,6 +299,7 @@ class MiscService {
             bg_colors: bg_colors || null,
             owner,
             owner_image: owner_image || null,
+            user_id: user_id || null,
             active: true,
             created_at: new Date().toISOString(),
         });

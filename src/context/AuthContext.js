@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useReducer, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import api from '../services/api';
-import { registerForPushNotificationsAsync } from '../utils/notifications';
 import { navigate } from '../utils/navigationUtils';
 
 const AuthContext = createContext();
@@ -64,25 +63,11 @@ export function AuthProvider({ children }) {
             if (stored) {
                 const { user, token } = JSON.parse(stored);
                 dispatch({ type: 'RESTORE_TOKEN', payload: { user, token } });
-                
-                // Register every user for push notifications
-                handlePushRegistration(user, token);
             } else {
                 dispatch({ type: 'FINISH_RESTORE' });
             }
         } catch {
             dispatch({ type: 'FINISH_RESTORE' });
-        }
-    };
-
-    const handlePushRegistration = async (user, token) => {
-        try {
-            const pushToken = await registerForPushNotificationsAsync();
-            if (pushToken && pushToken !== user.push_token) {
-                await updateProfile({ push_token: pushToken }, token);
-            }
-        } catch (error) {
-            console.log('Error registering for push notifications:', error);
         }
     };
 
@@ -101,10 +86,6 @@ export function AuthProvider({ children }) {
             await AsyncStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(result));
             console.log('AuthContext: Storage updated, dispatching success');
             dispatch({ type: 'LOGIN_SUCCESS', payload: result });
-            
-            // Register every user for push notifications
-            handlePushRegistration(result.user, result.token);
-            
             return result;
         } catch (error) {
             console.error('AuthContext: Login error caught:', error.message);

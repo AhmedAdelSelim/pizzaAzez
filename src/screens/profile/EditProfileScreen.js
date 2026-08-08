@@ -14,6 +14,7 @@ export default function EditProfileScreen({ navigation }) {
     const { user, updateProfile } = useAuth();
     const [name, setName] = useState(user?.name || '');
     const [phone, setPhone] = useState(user?.phone || '');
+    const [address, setAddress] = useState(user?.address || '');
     const [birthday, setBirthday] = useState(user?.birthday || '');
     const [imageUri, setImageUri] = useState(user?.image || null);
     const [isLoading, setIsLoading] = useState(false);
@@ -71,6 +72,7 @@ export default function EditProfileScreen({ navigation }) {
         try {
             await updateProfile({
                 name: name.trim(),
+                address: address.trim() || null,
                 birthday: birthday.trim() || null,
             });
             Alert.alert('نجاح', 'تم تحديث البيانات بنجاح', [
@@ -157,6 +159,27 @@ export default function EditProfileScreen({ navigation }) {
                                 editable={false}
                             />
                         </View>
+                    </View>
+
+                    {/* Checkout prefills its address box from here, and until now
+                        this was the one field a customer could never change after
+                        signing up. */}
+                    <View style={styles.inputGroup}>
+                        <Text style={styles.inputLabel}>عنوان التوصيل</Text>
+                        <View style={styles.inputContainer}>
+                            <TextInput
+                                style={[styles.input, styles.addressInput]}
+                                value={address}
+                                onChangeText={setAddress}
+                                placeholder="مثال: الزرقا - شارع البحر - عمارة ٧ - الدور الثالث"
+                                placeholderTextColor={COLORS.textMuted}
+                                textAlign="right"
+                                multiline
+                            />
+                        </View>
+                        <Text style={styles.inputHint}>
+                            يظهر تلقائياً عند إتمام الطلب، ويمكنك تعديله وقتها.
+                        </Text>
                     </View>
 
                     <View style={styles.inputGroup}>
@@ -300,6 +323,17 @@ const styles = StyleSheet.create({
         fontSize: SIZES.base,
         ...FONTS.regular,
         padding: 0,
+    },
+    addressInput: {
+        minHeight: 64,
+        textAlignVertical: 'top',
+    },
+    inputHint: {
+        color: COLORS.textMuted,
+        fontSize: SIZES.xs,
+        ...FONTS.regular,
+        textAlign: 'right',
+        marginTop: 6,
     },
     saveButton: {
         marginTop: 10,

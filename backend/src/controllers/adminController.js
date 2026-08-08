@@ -1,4 +1,6 @@
 const { adminService } = require('../services');
+const sseService = require('../services/sseService');
+const storyQuotaService = require('../services/storyQuotaService');
 
 const adminController = {
     async getOrders(request, reply) {
@@ -65,7 +67,19 @@ const adminController = {
 
     async addStory(request, reply) {
         try {
-            return await adminService.addStory(request.body);
+            const { title, image, active, bg_colors, owner, owner_image } = request.body;
+            // Persist first: broadcasting a story that was never stored is why
+            // admin stories used to vanish on refresh.
+            const story = await adminService.addStory({
+                title: title || null,
+                image: image || null,
+                active: active !== false,
+                bg_colors: bg_colors || null,
+                owner: owner || 'Admin',
+                owner_image: owner_image || null,
+            });
+            sseService.sendToAll('new_story', story);
+            return story;
         } catch (error) {
             return reply.status(400).send({ message: error.message });
         }
@@ -75,6 +89,7 @@ const adminController = {
         try {
             const { id } = request.params;
             await adminService.deleteStory(id);
+            sseService.sendToAll('story_deleted', { id });
             return { success: true };
         } catch (error) {
             return reply.status(400).send({ message: error.message });
@@ -95,6 +110,19 @@ const adminController = {
             const { isActive } = request.body;
             const result = await adminService.updateUserStatus(id, isActive);
             reply.send(result);
+        } catch (error) {
+            return reply.status(400).send({ message: error.message });
+        }
+    },
+
+    // Extra stories for a VIP who has run through the monthly allowance and
+    // phoned in. Credits apply to the current month only.
+    async grantStoryCredits(request, reply) {
+        try {
+            const { id } = request.params;
+            const { credits } = request.body;
+            const user = await storyQuotaService.grantCredits(id, credits);
+            return { user, quota: storyQuotaService.getQuota(user) };
         } catch (error) {
             return reply.status(400).send({ message: error.message });
         }
