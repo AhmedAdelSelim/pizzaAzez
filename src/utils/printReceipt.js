@@ -15,10 +15,15 @@ import { OWNER_INFO, SHOP_NAME } from '../constants/restaurant';
  */
 
 /**
- * Roll width. 80mm is the common thermal receipt size; change to '58mm' for the
- * narrow rolls. On A4 this prints a narrow strip, which is still legible.
+ * Widest the ticket will ever render.
+ *
+ * The page size itself is left to the printer — whatever roll is actually
+ * loaded decides, so a 58mm roll, an 80mm roll and an A4 sheet all work with no
+ * configuration. This cap only stops a wide sheet from stretching a receipt
+ * across the full page; anything narrower simply fills its own width and the
+ * rows reflow to match.
  */
-const PAPER_WIDTH = '80mm';
+const RECEIPT_MAX_WIDTH = '80mm';
 
 const STATUS_LABELS = {
     pending: 'تم الاستلام',
@@ -115,19 +120,26 @@ export function receiptHtml(order) {
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>طلب ${esc(order.id)}</title>
 <style>
-  @page { size: ${PAPER_WIDTH} auto; margin: 0; }
+  /* size:auto hands the page size to the printer instead of forcing one. Naming a
+     width here is what made a 58mm roll clip: the driver was told the page was
+     80mm and had to scale or crop to fit. */
+  @page { size: auto; margin: 0; }
 
   * { box-sizing: border-box; }
 
   html, body { margin: 0; padding: 0; background: #fff; color: #000; }
 
   body {
-    width: ${PAPER_WIDTH};
+    width: 100%;
+    max-width: ${RECEIPT_MAX_WIDTH};
     padding: 4mm 3mm;
     font-family: Tahoma, Arial, sans-serif;
     /* Thermal heads are low-res: small text closes up and smears. */
     font-size: 12px;
     line-height: 1.5;
+    /* A long address or an unbroken order id must wrap rather than run off the
+       edge of a narrow roll. */
+    overflow-wrap: break-word;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
@@ -142,8 +154,14 @@ export function receiptHtml(order) {
   hr { border: 0; border-top: 1px dashed #000; margin: 2.5mm 0; }
 
   .row { display: flex; justify-content: space-between; align-items: baseline; gap: 2mm; }
+  /* Without this the label side refuses to shrink below its content and pushes
+     the amount off the edge on a 58mm roll. */
+  .row > :first-child { min-width: 0; }
 
-  .order-id { font-size: 15px; font-weight: 700; }
+  /* Never break the order id — it is the field staff read aloud. On a roll too
+     narrow for both, row-head lets the status drop to its own line instead. */
+  .row-head { flex-wrap: wrap; }
+  .order-id { font-size: 15px; font-weight: 700; white-space: nowrap; }
 
   .field { margin-top: .8mm; font-size: 11px; }
   .field .label { color: #333; }
@@ -151,8 +169,9 @@ export function receiptHtml(order) {
   /* The item lines are the part someone reads at arm's length off a spike by
      the oven, so they run larger than everything else on the ticket. */
   .item { margin-bottom: 2mm; }
-  .item-name { font-size: 15px; font-weight: 700; }
-  .item-price { font-size: 15px; white-space: nowrap; font-weight: 700; }
+  /* The name takes the slack and wraps; the price never splits. */
+  .item-name { flex: 1; min-width: 0; font-size: 15px; font-weight: 700; }
+  .item-price { flex: none; font-size: 15px; white-space: nowrap; font-weight: 700; }
   .item-size { font-size: 11px; color: #333; padding-inline-start: 5mm; }
 
   .totals .row { font-size: 11px; margin-top: .6mm; }
@@ -189,7 +208,7 @@ export function receiptHtml(order) {
 
   <hr>
 
-  <div class="row">
+  <div class="row row-head">
     <span class="order-id">${ltr(`#${order.id}`)}</span>
     <span class="bold">${esc(status)}</span>
   </div>
