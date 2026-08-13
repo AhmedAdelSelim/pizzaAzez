@@ -3,6 +3,7 @@
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import BottomTabs from './BottomTabs';
+import Logo from './Logo';
 import NetworkGuard from './NetworkGuard';
 import { useAuth } from '@/context/AuthContext';
 
@@ -41,9 +42,7 @@ export default function AppShell({ children }) {
         return (
             <div className="grid min-h-dvh place-items-center bg-background">
                 <div className="flex flex-col items-center">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src="/images/logo.png" alt="بيتزا عزيز" className="mb-4 size-30 object-contain" />
-                    <p className="text-2xl font-extrabold text-text">بيتزا عزيز</p>
+                    <Logo size={120} tagline="بيتزا عزيز" />
                 </div>
             </div>
         );

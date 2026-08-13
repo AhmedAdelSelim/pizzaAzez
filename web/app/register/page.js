@@ -2,8 +2,10 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import AuthBackdrop from '@/components/AuthBackdrop';
 import Button from '@/components/Button';
 import Icon from '@/components/Icon';
+import Logo from '@/components/Logo';
 import { useAuth } from '@/context/AuthContext';
 import { useClientSnapshot } from '@/lib/localStore';
 import { MIN_BIRTHDAY, todayISO } from '@/lib/utils';
@@ -76,17 +78,31 @@ export default function RegisterPage() {
     };
 
     return (
-        <main className="flex flex-1 flex-col px-6 py-8">
-            <div className="mb-8 mt-5 flex flex-col items-center">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/images/logo.png" alt="بيتزا عزيز" className="mb-2 size-28 object-contain" />
-                <h1 className="text-2xl font-extrabold text-text">انضم لبيتزا عزيز</h1>
-                <p className="text-xs text-text-secondary">أنشئ حسابك وابدأ بالطلب</p>
+        <main className="relative flex flex-1 flex-col px-6 py-8">
+            <AuthBackdrop />
+
+            <div className="rise-in mb-8 mt-4 flex flex-col items-center">
+                <Logo size={104} />
+                <h1 className="rise-in mt-3 text-2xl font-extrabold text-text" style={{ '--d': '150ms' }}>
+                    انضم لبيتزا عزيز
+                </h1>
+                <p className="rise-in text-xs text-text-secondary" style={{ '--d': '210ms' }}>
+                    أنشئ حسابك وابدأ بالطلب
+                </p>
             </div>
 
-            <form onSubmit={handleRegister} className="rounded-3xl bg-surface p-6 shadow-lg-soft">
+            <form
+                onSubmit={handleRegister}
+                className="rise-in rounded-3xl border border-border/60 bg-surface/85 p-6 shadow-lg-soft backdrop-blur-xl"
+                style={{ '--d': '80ms' }}
+            >
                 {(localError || error) && (
-                    <div className="mb-4 flex items-center gap-2 rounded-lg bg-error/10 p-3">
+                    <div
+                        // Keyed on the message so a repeat of the same failure
+                        // remounts and shakes again rather than sitting still.
+                        key={localError || error}
+                        className="animate-shake mb-4 flex items-center gap-2 rounded-lg bg-error/10 p-3"
+                    >
                         <Icon name="alert-circle" size={18} className="text-error" />
                         <span className="flex-1 text-xs font-medium text-error">
                             {localError || error}
@@ -95,10 +111,13 @@ export default function RegisterPage() {
                 )}
 
                 <div className="mb-6 flex flex-col gap-3">
-                    {fields.map((field) => (
+                    {fields.map((field, i) => (
                         <label
                             key={field.key}
-                            className="flex items-center gap-3 rounded-xl border border-border bg-background-light px-4 py-3.5 focus-within:border-primary"
+                            className="rise-in flex items-center gap-3 rounded-xl border border-border bg-background-light px-4 py-3.5 transition duration-200 focus-within:border-primary focus-within:shadow-[0_0_0_4px_rgba(232,93,44,0.14)] focus-within:-translate-y-0.5"
+                            // 55ms apart: enough to read as a cascade, short
+                            // enough that the last field is in under half a second.
+                            style={{ '--d': `${240 + i * 55}ms` }}
                         >
                             <Icon name={field.icon} size={20} className="text-muted" />
                             {field.label && (
@@ -118,7 +137,10 @@ export default function RegisterPage() {
                         </label>
                     ))}
 
-                    <label className="flex items-center gap-3 rounded-xl border border-border bg-background-light px-4 py-3.5 focus-within:border-primary">
+                    <label
+                        className="rise-in flex items-center gap-3 rounded-xl border border-border bg-background-light px-4 py-3.5 transition duration-200 focus-within:border-primary focus-within:shadow-[0_0_0_4px_rgba(232,93,44,0.14)] focus-within:-translate-y-0.5"
+                        style={{ '--d': `${240 + fields.length * 55}ms` }}
+                    >
                         <Icon name="lock-closed-outline" size={20} className="text-muted" />
                         <input
                             type={showPassword ? 'text' : 'password'}
@@ -142,9 +164,23 @@ export default function RegisterPage() {
                     </label>
                 </div>
 
-                <Button type="submit" title="إنشاء حساب" loading={isLoading} size="large" className="mb-5" />
+                <div
+                    className="rise-in relative mb-5 overflow-hidden rounded-xl"
+                    style={{ '--d': `${300 + fields.length * 55}ms` }}
+                >
+                    <Button type="submit" title="إنشاء حساب" loading={isLoading} size="large" />
+                    {!isLoading && (
+                        <span
+                            aria-hidden="true"
+                            className="animate-shine pointer-events-none absolute inset-y-0 -left-1/3 w-1/3 bg-gradient-to-r from-transparent via-white/25 to-transparent"
+                        />
+                    )}
+                </div>
 
-                <p className="text-center text-sm text-muted">
+                <p
+                    className="rise-in text-center text-sm text-muted"
+                    style={{ '--d': `${350 + fields.length * 55}ms` }}
+                >
                     لديك حساب بالفعل؟{' '}
                     <Link href="/login" className="font-bold text-primary">
                         تسجيل الدخول

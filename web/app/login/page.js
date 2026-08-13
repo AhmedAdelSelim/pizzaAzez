@@ -3,8 +3,10 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
+import AuthBackdrop from '@/components/AuthBackdrop';
 import Button from '@/components/Button';
 import Icon from '@/components/Icon';
+import Logo from '@/components/Logo';
 import { useAuth } from '@/context/AuthContext';
 
 export default function LoginPage() {
@@ -29,16 +31,24 @@ export default function LoginPage() {
     };
 
     return (
-        <main className="flex flex-1 flex-col justify-center px-6 py-10">
-            <div className="mb-10 flex flex-col items-center">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/images/logo.png" alt="بيتزا عزيز" className="mb-2 size-35 object-contain" />
-                <p className="text-sm text-text-secondary">بيتزا لذيذة وأكل شرقي</p>
+        <main className="relative flex flex-1 flex-col justify-center px-6 py-10">
+            <AuthBackdrop />
+
+            <div className="rise-in mb-10 flex flex-col items-center">
+                <Logo size={140} tagline="بيتزا لذيذة وأكل شرقي" />
             </div>
 
-            <form onSubmit={handleLogin} className="rounded-3xl bg-surface p-6 shadow-lg-soft">
-                <h1 className="text-2xl font-bold text-text">أهلاً بعودتك</h1>
-                <p className="mb-6 text-sm text-muted">سجّل دخولك لمتابعة الطلب</p>
+            <form
+                onSubmit={handleLogin}
+                className="rise-in rounded-3xl border border-border/60 bg-surface/85 p-6 shadow-lg-soft backdrop-blur-xl"
+                style={{ '--d': '80ms' }}
+            >
+                <h1 className="rise-in text-2xl font-bold text-text" style={{ '--d': '200ms' }}>
+                    أهلاً بعودتك
+                </h1>
+                <p className="rise-in mb-6 text-sm text-muted" style={{ '--d': '260ms' }}>
+                    سجّل دخولك لمتابعة الطلب
+                </p>
 
                 {expired && !localError && !error && (
                     <div className="mb-4 flex items-center gap-2 rounded-lg bg-warning/10 p-3">
@@ -50,7 +60,12 @@ export default function LoginPage() {
                 )}
 
                 {(localError || error) && (
-                    <div className="mb-4 flex items-center gap-2 rounded-lg bg-error/10 p-3">
+                    <div
+                        // Keyed on the message so a second, identical failure
+                        // remounts and shakes again instead of sitting still.
+                        key={localError || error}
+                        className="animate-shake mb-4 flex items-center gap-2 rounded-lg bg-error/10 p-3"
+                    >
                         <Icon name="alert-circle" size={18} className="text-error" />
                         <span className="flex-1 text-xs font-medium text-error">
                             {localError || error}
@@ -59,7 +74,10 @@ export default function LoginPage() {
                 )}
 
                 <div className="mb-6 flex flex-col gap-3.5">
-                    <label className="flex items-center gap-3 rounded-xl border border-border bg-background-light px-4 py-3.5 focus-within:border-primary">
+                    <label
+                        className="rise-in flex items-center gap-3 rounded-xl border border-border bg-background-light px-4 py-3.5 transition duration-200 focus-within:border-primary focus-within:shadow-[0_0_0_4px_rgba(232,93,44,0.14)] focus-within:-translate-y-0.5"
+                        style={{ '--d': '320ms' }}
+                    >
                         <Icon name="call-outline" size={20} className="text-muted" />
                         <input
                             type="tel"
@@ -72,7 +90,10 @@ export default function LoginPage() {
                         />
                     </label>
 
-                    <label className="flex items-center gap-3 rounded-xl border border-border bg-background-light px-4 py-3.5 focus-within:border-primary">
+                    <label
+                        className="rise-in flex items-center gap-3 rounded-xl border border-border bg-background-light px-4 py-3.5 transition duration-200 focus-within:border-primary focus-within:shadow-[0_0_0_4px_rgba(232,93,44,0.14)] focus-within:-translate-y-0.5"
+                        style={{ '--d': '380ms' }}
+                    >
                         <Icon name="lock-closed-outline" size={20} className="text-muted" />
                         <input
                             type={showPassword ? 'text' : 'password'}
@@ -96,9 +117,19 @@ export default function LoginPage() {
                     </label>
                 </div>
 
-                <Button type="submit" title="تسجيل الدخول" loading={isLoading} size="large" className="mb-5" />
+                {/* The sweep lives on a wrapper so Button stays untouched and every
+                    other use of it is unaffected. */}
+                <div className="rise-in relative mb-5 overflow-hidden rounded-xl" style={{ '--d': '440ms' }}>
+                    <Button type="submit" title="تسجيل الدخول" loading={isLoading} size="large" />
+                    {!isLoading && (
+                        <span
+                            aria-hidden="true"
+                            className="animate-shine pointer-events-none absolute inset-y-0 -left-1/3 w-1/3 bg-gradient-to-r from-transparent via-white/25 to-transparent"
+                        />
+                    )}
+                </div>
 
-                <p className="text-center text-sm text-muted">
+                <p className="rise-in text-center text-sm text-muted" style={{ '--d': '500ms' }}>
                     ليس لديك حساب؟{' '}
                     <Link href="/register" className="font-bold text-primary">
                         إنشاء حساب

@@ -253,6 +253,141 @@ body {
   }
 }
 
+/* ── Auth screens ─────────────────────────────────────────────────────────────
+ * First impression for a new customer, so login/register get more motion than
+ * the rest of the app. Everything below animates only `transform`, `opacity` and
+ * `filter` so it stays on the compositor and does not repaint on every frame.
+ * The `prefers-reduced-motion` block further down neutralises all of it. */
+
+/* Slow-drifting colour wash behind the form. Large blurred blobs reading as
+   warmth rather than as distinct shapes. */
+@keyframes az-blob {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  33% {
+    transform: translate3d(6%, -8%, 0) scale(1.15);
+  }
+  66% {
+    transform: translate3d(-5%, 6%, 0) scale(0.92);
+  }
+}
+
+/* Ingredients rising past the card. Starts and ends fully transparent so the
+   loop has no visible seam. */
+@keyframes az-drift {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 12vh, 0) rotate(0deg);
+  }
+  15%,
+  80% {
+    opacity: 0.5;
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(var(--drift-x, 4vw), -105vh, 0) rotate(var(--drift-spin, 180deg));
+  }
+}
+
+/* Weightless hover for the logo. */
+@keyframes az-float {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-1.5deg);
+  }
+  50% {
+    transform: translateY(-10px) rotate(1.5deg);
+  }
+}
+
+/* Light sweeping across the submit button, drawing the eye to the one thing
+   we want pressed. Long pause between passes so it reads as a highlight and not
+   a loading indicator. */
+@keyframes az-shine {
+  0%,
+  55% {
+    transform: translateX(-140%);
+  }
+  100% {
+    transform: translateX(140%);
+  }
+}
+
+/* Errors: a short lateral shake carries "try again" faster than colour alone. */
+@keyframes az-shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(-7px);
+  }
+  40% {
+    transform: translateX(6px);
+  }
+  60% {
+    transform: translateX(-4px);
+  }
+  80% {
+    transform: translateX(2px);
+  }
+}
+
+.animate-blob {
+  animation: az-blob 18s ease-in-out infinite;
+}
+.animate-drift {
+  animation: az-drift var(--drift-time, 16s) linear infinite;
+}
+.animate-float {
+  animation: az-float 5s ease-in-out infinite;
+}
+.animate-shine {
+  animation: az-shine 4.5s ease-in-out infinite;
+}
+.animate-shake {
+  animation: az-shake 0.45s ease-in-out both;
+}
+
+/* Steam off the logo. Rises, thins and fades — never fully opaque, so it reads
+   as vapour rather than as a drawn line. */
+@keyframes az-steam {
+  0% {
+    opacity: 0;
+    transform: translateY(4px) scaleY(0.7);
+  }
+  35% {
+    opacity: 0.65;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-14px) scaleY(1.25);
+  }
+}
+.animate-steam {
+  animation: az-steam 3.3s ease-out infinite;
+  /* Each wisp scales from its own base, not the shared svg origin. */
+  transform-box: fill-box;
+  transform-origin: bottom center;
+}
+
+/*
+ * Staggered entrance. Each element sets its own `--d`, so the sequence lives at
+ * the call site next to the markup it orders rather than in a pile of
+ * nth-child rules here.
+ *
+ *   <div className="rise-in" style={{ '--d': '120ms' }}>
+ *
+ * `both` matters: without it the element is briefly visible at full opacity
+ * before its delay elapses, which flashes on a slow first paint.
+ */
+.rise-in {
+  animation: az-rise 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: var(--d, 0ms);
+}
+
 .animate-fade-in {
   animation: az-fade-in 0.3s ease-out both;
 }
