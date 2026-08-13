@@ -20,6 +20,30 @@ npm run test:report   # open the last HTML report
 `NEXT_PUBLIC_API_URL` in `.env.local` points the tests at the API, the same as
 the app.
 
+### Required environment
+
+The fixtures create and delete real rows and log in as a real admin, so they need
+credentials. There are **no defaults** — inline ones previously put a working
+admin phone and password into a public repository. Put these in `web/.env.local`,
+which is gitignored:
+
+| Variable | What |
+|---|---|
+| `TEST_SUPABASE_URL` | Supabase project URL |
+| `TEST_SUPABASE_KEY` | **Secret (service_role) key.** Teardown deletes rows directly, and Row Level Security denies the publishable key. |
+| `TEST_ADMIN_PHONE` | Admin account to test against |
+| `TEST_ADMIN_PASSWORD` | That account's password |
+
+A missing one fails at import naming the variable, rather than running against
+something unexpected.
+
+⚠️ **These tests write to whatever database you point them at.** Production and
+development share one Supabase project, so a run creates real orders, moves real
+order statuses, and fires admin push notifications. Rows are prefix-tagged
+(`__pwtest__`, phone numbers under `0199…`) and removed in teardown, but the
+live admin screen will show them while a run is in progress. Prefer a separate
+Supabase project for testing if you can.
+
 ## Layout
 
 ```

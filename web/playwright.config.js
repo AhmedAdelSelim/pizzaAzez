@@ -1,10 +1,21 @@
+import { config as loadEnv } from 'dotenv';
 import { defineConfig, devices } from '@playwright/test';
+
+// Playwright does not read .env files on its own, and the fixtures now take
+// their Supabase key and admin credentials from the environment with no inline
+// defaults. Without this the suite fails at import with a message telling you
+// which variable is missing.
+loadEnv({ path: '.env.local', quiet: true });
 
 const WEB_URL = process.env.TEST_WEB_URL || 'http://localhost:3000';
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4555/api';
 
 export default defineConfig({
     testDir: './tests',
+    // Compiles every route before the first test. `next dev` builds routes on
+    // demand, and a compile landing mid-test produced a rotating set of failures
+    // that never reproduced in isolation. See tests/global-setup.js.
+    globalSetup: './tests/global-setup.js',
     // Fixtures create and delete real rows, so parallel workers would race each
     // other over the same seeded accounts. One worker keeps runs deterministic.
     workers: 1,

@@ -13,8 +13,35 @@
  * run sweeps up.
  */
 
-const SUPABASE_URL = process.env.TEST_SUPABASE_URL || 'https://utotcozlqmnverrugjkx.supabase.co';
-const SUPABASE_KEY = process.env.TEST_SUPABASE_KEY || 'sb_publishable_HSLL7fsrq4wOZVvxH2lT4Q_XFYKcemz';
+/**
+ * Credentials come from the environment only.
+ *
+ * These used to have inline defaults, which put a working admin phone and
+ * password into a public repository. Nothing here falls back any more — a
+ * missing variable fails loudly with instructions instead.
+ *
+ * Teardown talks to Supabase directly, so TEST_SUPABASE_KEY has to be the
+ * secret (service_role) key once Row Level Security is enabled — the
+ * publishable key will no longer be allowed to delete rows. Keep it in an
+ * untracked .env.local, never in this file.
+ */
+function requireEnv(name, hint) {
+    const value = process.env[name];
+    if (!value) {
+        throw new Error(
+            `${name} is not set — the test suite needs it.\n` +
+            `  ${hint}\n` +
+            `  Put it in web/.env.local (gitignored). See web/tests/README.md.`
+        );
+    }
+    return value;
+}
+
+const SUPABASE_URL = requireEnv('TEST_SUPABASE_URL', 'Your Supabase project URL.');
+const SUPABASE_KEY = requireEnv(
+    'TEST_SUPABASE_KEY',
+    'Supabase secret (service_role) key — teardown deletes rows directly.'
+);
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4555/api';
 
 /** Everything the suite creates carries this marker. */
@@ -24,8 +51,8 @@ export const NAME_PREFIX = '__pwtest__';
 const TEST_PHONE_BASE = '0199';
 
 export const ADMIN = {
-    phone: process.env.TEST_ADMIN_PHONE || '01021317616',
-    password: process.env.TEST_ADMIN_PASSWORD || '1234567',
+    phone: requireEnv('TEST_ADMIN_PHONE', 'Phone of the admin account to test with.'),
+    password: requireEnv('TEST_ADMIN_PASSWORD', 'That account\'s password.'),
 };
 
 /** A username that cannot collide with a real customer or a parallel run. */

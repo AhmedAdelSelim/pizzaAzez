@@ -1,0 +1,17 @@
+# TLS in front of the API. Copy to /etc/caddy/Caddyfile on the server, replace
+# the domain, then `sudo systemctl reload caddy`.
+#
+# Caddy obtains and renews the Let's Encrypt certificate by itself, so there is
+# no certbot cron job to forget about. The DNS A record for this name must
+# already point at this server or issuance fails.
+#
+# See DEPLOY.md for the full sequence.
+
+api.YOUR-DOMAIN.com {
+    reverse_proxy localhost:3000 {
+        # Server-sent events must stream. Without this Caddy buffers the
+        # response and the admin order list silently stops updating live —
+        # every event arrives at once when the connection finally closes.
+        flush_interval -1
+    }
+}
