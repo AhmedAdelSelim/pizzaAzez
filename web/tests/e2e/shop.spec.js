@@ -92,8 +92,12 @@ test('a placed order shows as تم الاستلام in history', async ({ page }
 
     await goto(page, '/orders');
     await expect(page.getByText('تم الاستلام').first()).toBeVisible();
-    // A brand-new order can still be withdrawn.
-    await expect(page.getByRole('button', { name: 'إلغاء' }).first()).toBeVisible();
+
+    // Customers cannot cancel, at any status — so a brand-new order offers a
+    // reorder button and nothing else. The row is asserted present first, so
+    // this cannot pass merely because the order list failed to render.
+    await expect(page.getByRole('button', { name: /إعادة طلب/ }).first()).toBeVisible();
+    await expect(page.getByRole('button', { name: 'إلغاء' })).toHaveCount(0);
 });
 
 test('checkout redirects away when the cart is empty', async ({ page }) => {

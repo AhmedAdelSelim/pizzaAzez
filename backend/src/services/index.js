@@ -196,11 +196,11 @@ class OrderService {
         if (!order) throw new Error('الطلب غير موجود');
         if (order.user_id !== userId) throw new Error('غير مصرح');
 
-        // Once the kitchen has started, the food is already being made — the
-        // customer can no longer pull it back. Enforced here rather than in the
-        // UI so a crafted request can't bypass it.
+        // Customers do not cancel their own orders — see isCancellable. Enforced
+        // here rather than only in the UI, so removing the button is not the only
+        // thing standing in the way of a crafted request.
         if (!isCancellable(order.status)) {
-            throw new Error('لا يمكن إلغاء الطلب بعد بدء التحضير. يرجى الاتصال بالإدارة.');
+            throw new Error('لا يمكن إلغاء الطلب من التطبيق. يرجى الاتصال بالمطعم.');
         }
 
         const result = await orderRepository.update(

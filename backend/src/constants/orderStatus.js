@@ -25,10 +25,17 @@ const ORDER_FLOW = [
 const ALL_STATUSES = [...ORDER_FLOW, ORDER_STATUS.CANCELLED];
 
 /**
- * An order is "in progress" from the moment the kitchen starts on it.
- * Only a not-yet-started order can be withdrawn.
+ * Customers cannot cancel. Not at any status, not within any window.
+ *
+ * Kept as a function rather than deleting the endpoint, deliberately: the React
+ * Native app already installed on phones will keep calling it, and a clear
+ * refusal in Arabic is friendlier than the 404 it would get from a removed
+ * route. Both clients have had the button taken away.
+ *
+ * This does not touch the admin path — adminService.updateOrderStatus can still
+ * move an order to `cancelled`, which is how a rejection is recorded.
  */
-const isCancellable = (status) => status === ORDER_STATUS.RECEIVED;
+const isCancellable = () => false;
 
 const isValidStatus = (status) => ALL_STATUSES.includes(status);
 

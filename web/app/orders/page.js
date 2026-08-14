@@ -68,21 +68,6 @@ export default function OrdersPage() {
         });
     }, [sse, setOrders]);
 
-    const handleCancelOrder = async (order) => {
-        const ok = await confirm('إلغاء الطلب', 'هل أنت متأكد أنك تريد إلغاء هذا الطلب؟', {
-            confirmText: 'نعم، إلغاء الطلب',
-            cancelText: 'تراجع',
-            destructive: true,
-        });
-        if (!ok) return;
-        try {
-            await api.cancelOrder(order.id, token);
-            reloadOrders();
-        } catch (error) {
-            alert('خطأ', error.message);
-        }
-    };
-
     const handleReorder = async (order) => {
         if (!order.items?.length) return;
         const ok = await confirm('إعادة الطلب', 'هل تريد إضافة نفس المنتجات إلى سلة التسوق؟', {
@@ -198,20 +183,10 @@ export default function OrdersPage() {
                                             {egp(order.total)}
                                         </span>
                                     </p>
+                                    {/* No cancel button: customers do not cancel their
+                                        own orders. isCancellable() on the server refuses
+                                        it too, so this is not the only guard. */}
                                     <div className="flex gap-2">
-                                        {/* Only a not-yet-started order can be withdrawn — mirrors
-                                            isCancellable() on the server, which rejects anything past
-                                            'pending'. Offering it on 'preparing' just raises an error. */}
-                                        {order.status === 'pending' && (
-                                            <button
-                                                type="button"
-                                                onClick={() => handleCancelOrder(order)}
-                                                className="flex items-center gap-1 rounded-lg border border-error/40 px-3 py-1.5 text-[11px] font-semibold text-error transition hover:bg-error/10"
-                                            >
-                                                <Icon name="close-circle-outline" size={14} />
-                                                إلغاء
-                                            </button>
-                                        )}
                                         <button
                                             type="button"
                                             onClick={() => handleReorder(order)}

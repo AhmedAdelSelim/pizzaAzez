@@ -133,39 +133,55 @@ test.describe('order lifecycle', () => {
 });
 
 test.describe('cancellation', () => {
-    test('a customer may cancel before the kitchen starts', async () => {
-        const order = await placeOrder(customer.token);
-        const res = await api(`/orders/${order.id}/cancel`, { method: 'PUT', token: customer.token });
-        expect(res.status).toBe(200);
-        expect(res.json.status).toBe('cancelled');
-    });
+    // Customers do not cancel their own orders, at any status. The endpoint is
+    // kept rather than removed so the already-installed RN app gets a readable
+    // refusal instead of a 404 — see isCancellable in constants/orderStatus.
+    for (const status of ['pending', 'preparing']) {
+        test(`a customer cannot cancel a ${status} order`, async () => {
+            const order = await placeOrder(customer.token);
+            if (status !== 'pending') {
+                await api(`/admin/orders/${order.id}/status`, {
+                    method: 'PUT',
+                    token: admin.token,
+                    body: { status },
+                });
+            }
 
-    test('a customer may not cancel once it is in progress', async () => {
-        const order = await placeOrder(customer.token);
-        await api(`/admin/orders/${order.id}/status`, {
-            method: 'PUT',
-            token: admin.token,
-            body: { status: 'preparing' },
+            const res = await api(`/orders/${order.id}/cancel`, { method: 'PUT', token: customer.token });
+            expect(res.status).toBe(400);
+            expect(res.json.message).toContain('لا يمكن إلغاء الطلب');
+
+            // and the order is left exactly as it was
+            const mine = await api('/orders', { token: customer.token });
+            expect(mine.json.find((o) => o.id === order.id).status).toBe(status);
         });
+    }
 
-        const res = await api(`/orders/${order.id}/cancel`, { method: 'PUT', token: customer.token });
-        expect(res.status).toBe(400);
-        expect(res.json.message).toContain('لا يمكن إلغاء الطلب');
-    });
-
-    test('a customer cannot cancel somebody else’s order', async () => {
+    test('a customer cannot cancel somebody else\u2019s order', async () => {
         const order = await placeOrder(customer.token);
         const other = await createTestUser({ name: 'intruder' });
         try {
             const res = await api(`/orders/${order.id}/cancel`, { method: 'PUT', token: other.token });
             expect(res.status).toBe(400);
 
-            // and the order is untouched
             const mine = await api('/orders', { token: customer.token });
             expect(mine.json.find((o) => o.id === order.id).status).toBe('pending');
         } finally {
             await deleteTestUser(other.user.id);
         }
+    });
+
+    // The admin path is unaffected: rejecting an order is how a cancellation is
+    // recorded, and that must keep working.
+    test('an admin can still cancel an order', async () => {
+        const order = await placeOrder(customer.token);
+        const res = await api(`/admin/orders/${order.id}/status`, {
+            method: 'PUT',
+            token: admin.token,
+            body: { status: 'cancelled' },
+        });
+        expect(res.status).toBe(200);
+        expect(res.json.status).toBe('cancelled');
     });
 });
 

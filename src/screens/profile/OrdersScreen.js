@@ -71,28 +71,6 @@ export default function OrdersScreen({ navigation }) {
 
     const isActiveStatus = (status) => ['pending', 'preparing', 'baking', 'shipping'].includes(status);
 
-    const handleCancelOrder = (order) => {
-        Alert.alert(
-            'إلغاء الطلب',
-            'هل أنت متأكد أنك تريد إلغاء هذا الطلب؟',
-            [
-                { text: 'تراجع', style: 'cancel' },
-                {
-                    text: 'نعم، إلغاء الطلب',
-                    style: 'destructive',
-                    onPress: async () => {
-                        try {
-                            await api.cancelOrder(order.id, token);
-                            fetchOrders();
-                        } catch (error) {
-                            Alert.alert('خطأ', error.message);
-                        }
-                    },
-                },
-            ]
-        );
-    };
-
     const handleReorder = (order) => {
         if (!order.items || order.items.length === 0) return;
         Alert.alert(
@@ -221,19 +199,10 @@ export default function OrdersScreen({ navigation }) {
                                     <Text style={styles.totalLabel}>
                                         الإجمالي: <Text style={styles.totalValue}>{item.total} ج.م</Text>
                                     </Text>
+                                    {/* No cancel button: customers do not cancel their own
+                                        orders. isCancellable() on the server refuses it too,
+                                        so this is not the only guard. */}
                                     <View style={styles.footerActions}>
-                                        {/* Only a not-yet-started order can be withdrawn — mirrors
-                                            isCancellable() on the server, which rejects anything past
-                                            'pending'. Offering it on 'preparing' just raises an error. */}
-                                        {item.status === 'pending' && (
-                                            <TouchableOpacity
-                                                style={styles.cancelButton}
-                                                onPress={() => handleCancelOrder(item)}
-                                            >
-                                                <Ionicons name="close-circle-outline" size={14} color={COLORS.error} />
-                                                <Text style={styles.cancelText}>إلغاء</Text>
-                                            </TouchableOpacity>
-                                        )}
                                         <TouchableOpacity
                                             style={styles.reorderButton}
                                             onPress={() => handleReorder(item)}
@@ -393,22 +362,6 @@ const styles = StyleSheet.create({
     footerActions: {
         flexDirection: 'row',
         gap: 8,
-    },
-    cancelButton: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: COLORS.error + '15',
-        paddingHorizontal: 12,
-        paddingVertical: 8,
-        borderRadius: SIZES.radius_md,
-        borderWidth: 1,
-        borderColor: COLORS.error + '30',
-        gap: 4,
-    },
-    cancelText: {
-        color: COLORS.error,
-        fontSize: SIZES.xs,
-        ...FONTS.bold,
     },
     totalLabel: {
         color: COLORS.textSecondary,
